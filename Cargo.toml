@@ -8,4 +8,5 @@ description = "A library to interact with the Google Gemini API"
 [dependencies]
 json = "0.12.4"
 reqwest = "0.12.9"
+thiserror = "1.0.66"
 tokio = { version = "1.41.0", features = ["full"] }
