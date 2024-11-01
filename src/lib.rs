@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap, fs::File, io::{self, Write}
+    fs::File, io::{self, Write}
 };
 use json::JsonValue;
 use reqwest::{Client, Method};
@@ -20,22 +20,17 @@ pub enum GeminiError {
     ParseError(String),
 }
 
-#[derive(Hash, Eq, Debug, PartialEq)]
-enum Role {
-    User,
-    Model
-}
-
 #[derive(Debug)]
 pub struct Conversation {
     pub token: String,
     pub model: String,
-    history: Vec<HashMap<Role, String>>
+    history: Vec<Response>
 }
 
 #[derive(Debug)]
 pub struct Response {
     pub text: String,
+    role: String
 }
 
 impl Conversation {
@@ -46,31 +41,41 @@ impl Conversation {
 
     /// Sends a prompt to the Gemini API and returns the response
     pub async fn prompt(&mut self, input: &str) -> Result<Response, GeminiError> {
-        let mut user_history = HashMap::new();
-        user_history.insert(Role::User, input.to_string());
-        self.history.push( user_history );
+        self.history.push(
+            Response{ text: input.to_string(), role: "user".to_string() }
+        );
 
         let url = format!(
             "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent?key={1}",
             self.model, self.token
         );
 
-        let data = format!(
-            r#"{{
-                "contents": [{{
-                    "parts": [{{
-                        "text": "{}"
-                    }}]
-                }}]
-            }}"#,
-            input.replace("\"", "\\\"")
-        );
+        //let data = format!(
+        //    r#"{{
+        //        "contents": [{{
+        //            "parts": [{{
+        //                "text": "{}"
+        //            }}]
+        //        }}]
+        //    }}"#,
+        //    input.replace("\"", "\\\"")
+        //);
+
+        let mut data = json::object! {
+            "contents": []
+        };
+        for i in self.history.iter() {
+            data["contents"].push(json::object! {
+                "parts": [{"text": i.text.clone()}],
+                "role": i.role.clone()
+            })?
+        }
 
         let client = Client::new();
         let request = client
             .request(Method::POST, url)
             .header("Content-Type", "application/json")
-            .body(data)
+            .body(data.dump())
             .build()?;
 
         let http_response = client.execute(request).await?;
@@ -83,14 +88,13 @@ impl Conversation {
             .as_str()
             .ok_or_else(|| GeminiError::ParseError("Failed to extract response text".to_string()))?;
 
-        let mut model_history = HashMap::new();
-        model_history.insert(Role::Model, response_text.to_string());
-        self.history.push( model_history );
-
-        println!("{self:?}");
+        self.history.push(
+            Response { text: response_text.to_string(), role: "model".to_string() }
+        );
 
         Ok(Response {
             text: response_text.to_string(),
+            role: "model".to_string()
         })
     }
 }
@@ -107,7 +111,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_conversation() {
-        let conv = Conversation::new(
+        let mut conv = Conversation::new(
             "your-api-key".to_string(),
             "gemini-pro".to_string(),
         );
