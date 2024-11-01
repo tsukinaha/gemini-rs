@@ -5,21 +5,45 @@ use json::JsonValue;
 use reqwest::{Client, Method};
 use thiserror::Error;
 
+/// Error type for the Gemini API
 #[derive(Error, Debug)]
 pub enum GeminiError {
+    /// Error type for HTTP request errors
     #[error("HTTP request failed: {0}")]
     RequestError(#[from] reqwest::Error),
     
+    /// Error type for IO errors
     #[error("IO operation failed: {0}")]
     IoError(#[from] io::Error),
     
+    /// Error type for JSON parsing errors (you shouldn't get this one unless something bad happened)
     #[error("JSON parsing failed: {0}")]
     JsonError(#[from] json::Error),
     
+    /// Error type for parsing
     #[error("Response parsing failed: {0}")]
     ParseError(String),
 }
 
+/// Represents a conversation with Gemini
+/// Example usage:
+/// ```rs
+/// // main.rs
+/// use gemini_rs::Conversation;
+
+/// #[tokio::main]
+/// async fn main() {
+///    let mut convo = Conversation::new(
+///        std::env::var("GEMINI_API_KEY").unwrap(), // Replace with however you want to get your API key
+///        "gemini-1.5-flash".to_string() // Replace with the desired model from https://ai.google.dev/gemini-api/docs/models/gemini
+///    );
+///
+///    let a = convo.prompt("If you had to describe Risk of Rain 2 in one word, what word would it be?").await.unwrap();
+///    println!("{0:?}", a.text);
+///    let b = convo.prompt("Now explain your reasoning").await.unwrap();
+///   println!("{0:?}", b.text);
+///}
+///```
 #[derive(Debug)]
 pub struct Conversation {
     pub token: String,
@@ -27,6 +51,7 @@ pub struct Conversation {
     history: Vec<Response>
 }
 
+/// Holds a response from Gemini
 #[derive(Debug)]
 pub struct Response {
     pub text: String,
@@ -82,8 +107,6 @@ impl Conversation {
         let response_json = http_response.text().await?;
         let response_dict = json::parse(&response_json)?;
 
-        log_json(&response_dict)?;
-
         let response_text = response_dict["candidates"][0]["content"]["parts"][0]["text"]
             .as_str()
             .ok_or_else(|| GeminiError::ParseError("Failed to extract response text".to_string()))?;
@@ -97,12 +120,6 @@ impl Conversation {
             role: "model".to_string()
         })
     }
-}
-
-fn log_json(json: &JsonValue) -> Result<(), GeminiError> {
-    let mut file = File::create("log.json")?;
-    file.write_all(json.dump().as_bytes())?;
-    Ok(())
 }
 
 #[cfg(test)]

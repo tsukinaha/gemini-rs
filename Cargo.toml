@@ -4,6 +4,12 @@ version = "0.2.2"
 edition = "2021"
 license = "MIT"
 description = "A library to interact with the Google Gemini API"
+homepage = "https://github.com/Shuflduf/gemini-rs"
+repository = "https://github.com/Shuflduf/gemini-rs"
+readme = "README.md"
+keywords = ["ai", "google", "gemini"]
+
+exclude = ["main.rs"]
 
 [dependencies]
 json = "0.12.4"
