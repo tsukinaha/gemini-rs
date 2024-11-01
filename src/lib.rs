@@ -21,7 +21,7 @@ pub struct Response {
 
 impl Conversation {
     /// Used to contact the Gemini API
-    pub async fn prompt(&self, input: &str) -> Result<Response, Error> {
+    pub async fn prompt(&self, input: &str) -> Result<Response, Box<dyn std::error::Error>> {
         let url = format!(
             "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent?key={1}",
             self.model, self.token
