@@ -1,7 +1,4 @@
-use std::{
-    fs::File, io::{self, Write}
-};
-use json::JsonValue;
+use std::io;
 use reqwest::{Client, Method};
 use thiserror::Error;
 
@@ -26,28 +23,20 @@ pub enum GeminiError {
 }
 
 /// Represents a conversation with Gemini
-/// Example usage:
+///## Example usage:
 /// ```rs
-/// // main.rs
-/// use gemini_rs::Conversation;
-
-/// #[tokio::main]
-/// async fn main() {
-///    let mut convo = Conversation::new(
-///        std::env::var("GEMINI_API_KEY").unwrap(), // Replace with however you want to get your API key
-///        "gemini-1.5-flash".to_string() // Replace with the desired model from https://ai.google.dev/gemini-api/docs/models/gemini
-///    );
+///let mut convo = Conversation::new(
+///    std::env::var("GEMINI_API_KEY").unwrap(), // Replace with however you want to get your API key
+///    "gemini-1.5-flash".to_string() // Use a model from get_models() 
+///);
 ///
-///    let a = convo.prompt("If you had to describe Risk of Rain 2 in one word, what word would it be?").await.unwrap();
-///    println!("{0:?}", a.text);
-///    let b = convo.prompt("Now explain your reasoning").await.unwrap();
-///   println!("{0:?}", b.text);
-///}
-///```
+///let response = convo.prompt("Hello World!")await.unwrap();
+///println!("{0:?}", a.text);
+/// ```
 #[derive(Debug)]
 pub struct Conversation {
-    pub token: String,
-    pub model: String,
+    token: String,
+    model: String,
     history: Vec<Response>
 }
 
@@ -74,17 +63,6 @@ impl Conversation {
             "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent?key={1}",
             self.model, self.token
         );
-
-        //let data = format!(
-        //    r#"{{
-        //        "contents": [{{
-        //            "parts": [{{
-        //                "text": "{}"
-        //            }}]
-        //        }}]
-        //    }}"#,
-        //    input.replace("\"", "\\\"")
-        //);
 
         let mut data = json::object! {
             "contents": []
@@ -120,6 +98,29 @@ impl Conversation {
             role: "model".to_string()
         })
     }
+}
+
+/// Get available models
+/// ## Important
+/// Most of these models **don't** currently work with this crate, so proceed
+/// with caution if you want to use different models.
+///
+/// The safe options that have been tested so far are:
+/// - `gemini-1.5-flash`
+/// - `gemini-1.5-pro`
+/// - `gemini-1.0-pro`
+pub async fn get_models(token: &str) -> Result<Vec<String>, GeminiError> {
+    let mut models: Vec<String> = vec![];
+    let request = reqwest::get(format!(
+        "https://generativelanguage.googleapis.com/v1beta/models?key={0}",
+        token
+    )).await?.text().await?;
+    let response_json = json::parse(&request)?;
+    for i in response_json["models"].members() {
+        models.push(i["name"].to_string().strip_prefix("models/").unwrap().to_string());
+    }
+
+    Ok(models) 
 }
 
 #[cfg(test)]
