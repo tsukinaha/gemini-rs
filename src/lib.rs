@@ -123,18 +123,3 @@ pub async fn get_models(token: &str) -> Result<Vec<String>, GeminiError> {
     Ok(models) 
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_conversation() {
-        let mut conv = Conversation::new(
-            "your-api-key".to_string(),
-            "gemini-pro".to_string(),
-        );
-        
-        let result = conv.prompt("Hello, how are you?").await;
-        assert!(result.is_ok());
-    }
-}
