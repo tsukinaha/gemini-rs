@@ -1,18 +1,29 @@
+/// Block thresholds for different areas of Gemini's responses
 #[derive(Clone, Debug)]
 pub enum BlockThreshold {
+    /// Always show regardless of probability of unsafe content
     None,
+    /// Block when high probability of unsafe content
     OnlyHigh,
+    /// Block when medium or high probability of unsafe content
     MediumAndAbove,
+    /// Block when low, medium or high probability of unsafe content **(default)**
     LowAndAbove
 }
 
+/// Safety settings for Gemini's responses
 #[derive(Debug)]
 pub struct SafetySettings {
-    harrasment: BlockThreshold,
-    hate_speech: BlockThreshold,
-    sexually_explicit: BlockThreshold,
-    dangerous_content: BlockThreshold,
-    civic_integrity: BlockThreshold
+    ///	Negative or harmful comments targeting identity and/or protected attributes
+    pub harrasment: BlockThreshold,
+    /// Content that is rude, disrespectful, or profane
+    pub hate_speech: BlockThreshold,
+    /// Contains references to sexual acts or other lewd content
+    pub sexually_explicit: BlockThreshold,
+    /// Promotes, facilitates, or encourages harmful acts
+    pub dangerous_content: BlockThreshold,
+    /// Election-related queries
+    pub civic_integrity: BlockThreshold
 }
 impl SafetySettings {
     pub fn iter(&self) -> Iter<'_> {
@@ -42,6 +53,7 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
+/// Returns an instance of [SafetySettings] with default [BlockThreshold]s (everything on `LowAndAbove`)
 pub fn default() -> SafetySettings {
     SafetySettings {
         harrasment: BlockThreshold::LowAndAbove,
@@ -52,6 +64,8 @@ pub fn default() -> SafetySettings {
     }
 }
 
+/// Returns an instance of [SafetySettings] where all fields have 
+/// the same [BlockThreshold]
 pub fn from_threshold(threshold: BlockThreshold) -> SafetySettings {
     SafetySettings {
         harrasment: threshold.clone(),
@@ -62,6 +76,7 @@ pub fn from_threshold(threshold: BlockThreshold) -> SafetySettings {
     }
 }
 
+/// Returns an instance of [SafetySettings] with custom [BlockThreshold]s
 pub fn custom(
     harrasment: BlockThreshold,
     hate_speech: BlockThreshold,
