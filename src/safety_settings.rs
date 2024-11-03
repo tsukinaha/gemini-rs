@@ -10,11 +10,29 @@ pub enum BlockThreshold {
     /// Block when low, medium or high probability of unsafe content **(default)**
     LowAndAbove
 }
+impl BlockThreshold {
+    pub fn get_actual(&self) -> String {
+        let actual = match self {
+            Self::None => "BLOCK_NONE",
+            Self::OnlyHigh => "BLOCK_ONLY_HIGH",
+            Self::MediumAndAbove => "BLOCK_MEDIUM_AND_ABOVE",
+            Self::LowAndAbove => "BLOCK_LOW_AND_ABOVE"
+        };
+        actual.to_string()
+    }
+}
+
+pub enum HarmProbability {
+    Negligible,
+    Low,
+    Medium,
+    High
+}
 
 /// Safety settings for Gemini's responses
 #[derive(Debug)]
 pub struct SafetySettings {
-    ///	Negative or harmful comments targeting identity and/or protected attributes
+    /// Negative or harmful comments targeting identity and/or protected attributes
     pub harrasment: BlockThreshold,
     /// Content that is rude, disrespectful, or profane
     pub hate_speech: BlockThreshold,
@@ -38,14 +56,14 @@ pub struct Iter<'a> {
     index: u8,
 }
 impl<'a> Iterator for Iter<'a> {
-    type Item = &'a BlockThreshold;
+    type Item = (String, &'a BlockThreshold);
     fn next(&mut self) -> Option<Self::Item> {
         let ret = match self.index {
-            0 => &self.inner.harrasment,
-            1 => &self.inner.hate_speech,
-            2 => &self.inner.sexually_explicit,
-            3 => &self.inner.dangerous_content,
-            4 => &self.inner.civic_integrity,
+            0 => ("HARM_CATEGORY_HARASSMENT".to_string(), &self.inner.harrasment),
+            1 => ("HARM_CATEGORY_HATE_SPEECH".to_string(), &self.inner.hate_speech),
+            2 => ("HARM_CATEGORY_SEXUALLY_EXPLICIT".to_string(), &self.inner.sexually_explicit),
+            3 => ("HARM_CATEGORY_DANGEROUS_CONTENT".to_string(),&self.inner.dangerous_content),
+            4 => ("HARM_CATEGORY_CIVIC_INTEGRITY".to_string(), &self.inner.civic_integrity),
             _ => return None
         };
         self.index += 1;

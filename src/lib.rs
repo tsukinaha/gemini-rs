@@ -91,8 +91,11 @@ impl Conversation {
             })?
         };
         for i in self.safety_settings.iter() {
-            println!("{i:?}");
-        }
+            data["safetySettings"].push(json::object! {
+                "category": i.0,
+                "threshold": i.1.get_actual()
+            })?
+        };
 
         let client = Client::new();
         let request = client
@@ -105,6 +108,7 @@ impl Conversation {
         let response_json = http_response.text().await?;
         let response_dict = json::parse(&response_json)?;
 
+        println!("{0:?}", response_dict.dump());
         let response_text = response_dict["candidates"][0]["content"]["parts"][0]["text"]
             .as_str()
             .ok_or_else(|| GeminiError::ParseError("Failed to extract response text".to_string()))?;
