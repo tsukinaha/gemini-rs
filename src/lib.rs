@@ -108,7 +108,6 @@ impl Conversation {
         let response_json = http_response.text().await?;
         let response_dict = json::parse(&response_json)?;
 
-        println!("{0:?}", response_dict.dump());
         let response_text = response_dict["candidates"][0]["content"]["parts"][0]["text"]
             .as_str()
             .ok_or_else(|| GeminiError::ParseError("Failed to extract response text".to_string()))?;
