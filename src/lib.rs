@@ -1,6 +1,9 @@
 use std::io;
 use reqwest::{Client, Method};
+use safety_settings::SafetySettings;
 use thiserror::Error;
+
+pub mod safety_settings;
 
 /// Error type for the Gemini API
 #[derive(Error, Debug)]
@@ -37,7 +40,8 @@ pub enum GeminiError {
 pub struct Conversation {
     token: String,
     model: String,
-    history: Vec<Response>
+    history: Vec<Response>,
+    safety_settings: SafetySettings
 }
 
 /// Holds a response from Gemini
@@ -50,7 +54,19 @@ pub struct Response {
 impl Conversation {
     /// Creates a new conversation instance
     pub fn new(token: String, model: String) -> Self {
-        Self { token, model, history: vec!() }
+        Self { token, model, history: vec!(), safety_settings: safety_settings::default() }
+    }
+
+    /// Update the safety settings to different thresholds from [safety_settings]
+    /// ## Example:
+    /// ```rs 
+    /// let mut convo = Conversation::new(
+    ///     "ABC123".to_string,
+    ///     "gemini-1.5-flash".to_string
+    /// ).update_safety_settings(safety_settings::default());
+    /// ```
+    pub fn update_safety_settings(&mut self, settings: SafetySettings) {
+        self.safety_settings = settings;
     }
 
     /// Sends a prompt to the Gemini API and returns the response
@@ -65,6 +81,7 @@ impl Conversation {
         );
 
         let mut data = json::object! {
+            "safetySettings": [],
             "contents": []
         };
         for i in self.history.iter() {
@@ -72,6 +89,9 @@ impl Conversation {
                 "parts": [{"text": i.text.clone()}],
                 "role": i.role.clone()
             })?
+        };
+        for i in self.safety_settings.iter() {
+            println!("{i:?}");
         }
 
         let client = Client::new();
