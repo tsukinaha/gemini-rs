@@ -24,5 +24,6 @@ async fn main() {
 # Roadmap
 - [x] Error handling
 - [x] Conversation history
+- [x] Useless refactor for no good reason (*cry for help*)
 - [ ] Make more operations for conversations (saving, loading, etc.)
 - [ ] Image support

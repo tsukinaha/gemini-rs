@@ -1,11 +1,8 @@
 use std::io;
-use harm_probability::HarmProbabilities;
 use reqwest::{Client, Method};
-use safety_settings::SafetySettings;
 use thiserror::Error;
 
-pub mod safety_settings;
-mod harm_probability;
+pub mod safety;
 
 /// Error type for the Gemini API
 #[derive(Error, Debug)]
@@ -43,14 +40,14 @@ pub struct Conversation {
     token: String,
     model: String,
     history: Vec<Message>,
-    safety_settings: SafetySettings
+    safety_settings: Vec<safety::SafetySetting>,
 }
 
 /// Holds a response from Gemini
 #[derive(Debug)]
 pub struct Response {
     pub text: String,
-    pub harm_probability: harm_probability::HarmProbabilities,
+    pub safety_rating: Vec<safety::SafetyRating>,
 }
 
 /// A part of a conversation, used to store history
@@ -63,7 +60,12 @@ pub struct Message {
 impl Conversation {
     /// Creates a new conversation instance
     pub fn new(token: String, model: String) -> Self {
-        Self { token, model, history: vec!(), safety_settings: safety_settings::default() }
+        Self {
+            token,
+            model,
+            history: vec![],
+            safety_settings: safety::default_safety_settings()
+        }
     }
 
     /// Update the safety settings to different thresholds from [safety_settings]
@@ -74,12 +76,12 @@ impl Conversation {
     ///     "gemini-1.5-flash".to_string
     /// ).update_safety_settings(safety_settings::default());
     /// ```
-    pub fn update_safety_settings(&mut self, settings: SafetySettings) {
+    pub fn update_safety_settings(&mut self, settings: Vec<safety::SafetySetting>) {
         self.safety_settings = settings;
     }
 
     /// Sends a prompt to the Gemini API and returns the response
-    pub async fn prompt(&mut self, input: &str) -> Result<Response, GeminiError> {
+    pub async fn generate_content(&mut self, input: &str) -> Result<Response, GeminiError> {
         self.history.push(
             Message { text: input.to_string(), role: "user".to_string() }
         );
@@ -99,9 +101,9 @@ impl Conversation {
                 "role": i.role.clone()
             })?
         };
-        for i in self.safety_settings.iter() {
+        for i in self.safety_settings {
             data["safetySettings"].push(json::object! {
-                "category": i.0,
+                "category": i.category.get_real(),
                 "threshold": i.1.get_actual()
             })?
         };
@@ -130,7 +132,6 @@ impl Conversation {
         //    civic_integrity: harm_probability::probability_from_str(safety_dict[4]["probability"].as_str().unwrap()),
         //};
 
-        for i in 
 
         
 
