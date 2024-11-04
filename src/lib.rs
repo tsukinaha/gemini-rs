@@ -48,7 +48,7 @@ pub struct Conversation {
 pub struct Response {
     pub text: String,
     pub safety_rating: Vec<safety::SafetyRating>,
-    pub token_count: int,
+    pub token_count: u64,
 }
 
 /// A part of a conversation, used to store history
@@ -144,7 +144,8 @@ impl Conversation {
 
         Ok(Response {
             text: response_text.to_string(),
-            safety_rating
+            safety_rating,
+            token_count,
         })
     }
 }
