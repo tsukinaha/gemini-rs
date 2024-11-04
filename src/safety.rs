@@ -3,7 +3,7 @@
 //! Is used to change what kind of messages will be blocked, as well as to show why
 //! a message was blocked
 
-/// Different harm categories that Gemini can block a message because of.
+/// The category of a [SafetyRating]
 #[derive(Debug)]
 pub enum HarmCategory {
     /// Category is unspecified
@@ -71,10 +71,15 @@ pub enum HarmCategory {
 /// This does not indicate the severity of harm for a piece of content.
 #[derive(Debug)]
 pub enum HarmProbability {
+    /// Probability is unspecified
     Unspecified,
+    /// Content has a negligible chance of being unsafe
     Negligible,
+    /// Content has a low chance of being unsafe
     Low,
+    /// Content has a medium chance of being unsafe
     Medium,
+    /// Content has a high chance of being unsafe
     High,
 } impl HarmProbability {
     pub fn get_real(&self) -> &str {
@@ -97,13 +102,20 @@ pub enum HarmProbability {
     }
 }
 
+/// Block at and beyond a specified harm probability
 #[derive(Debug, Clone)]
 pub enum HarmBlockThreshold {
+    /// Threshold is unspecified
     Unspecified,
+    /// Content with [HarmProbability::Negligible] will be allowed.
     LowAndAbove,
+    /// Content with [HarmProbability::Negligible] and [HarmProbability::Low] will be allowed.
     MediumAndAbove,
+    /// Content with [HarmProbability::Negligible], [HarmProbability::Low], and [HarmProbability::Medium] will be allowed.
     OnlyHigh,
+    /// All content will be allowed.
     None,
+    /// Turn off the safety filter.
     Off,
 } impl HarmBlockThreshold {
     pub fn get_real(&self) -> &str {
@@ -118,12 +130,20 @@ pub enum HarmBlockThreshold {
     }
 }
 
+/// Safety setting, affecting the safety-blocking behavior.
+/// 
+/// Passing a safety setting for a category changes the allowed probability that content is blocked.
 #[derive(Debug)]
 pub struct SafetySetting {
     pub category: HarmCategory,
     pub threshold: HarmBlockThreshold,
 }
 
+/// Safety rating for a piece of content.
+/// 
+/// The safety rating contains the category of harm and the harm probability level in that category for a piece of content.
+/// Content is classified for safety across a number of harm categories
+/// and the probability of the harm classification is included here.
 #[derive(Debug)]
 pub struct SafetyRating {
     pub category: HarmCategory,
