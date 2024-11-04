@@ -150,7 +150,6 @@ pub struct SafetyRating {
     pub probability: HarmProbability,
 }
 
-// TODO: add a custom safety settings func for setting individual fields
 pub fn safety_settings_from(threshold: HarmBlockThreshold) -> Vec<SafetySetting> {
     vec![
         SafetySetting {
@@ -176,6 +175,7 @@ pub fn safety_settings_from(threshold: HarmBlockThreshold) -> Vec<SafetySetting>
     ]
 }
 
+/// Generates a default set of safety settings (everything is `[HarmBlockThreshold::LowAndAbove]`)
 pub fn default_safety_settings() -> Vec<SafetySetting> {
     safety_settings_from(HarmBlockThreshold::LowAndAbove)
 }

@@ -48,6 +48,7 @@ pub struct Conversation {
 pub struct Response {
     pub text: String,
     pub safety_rating: Vec<safety::SafetyRating>,
+    pub token_count: int,
 }
 
 /// A part of a conversation, used to store history
@@ -118,6 +119,9 @@ impl Conversation {
         let http_response = client.execute(request).await?;
         let response_json = http_response.text().await?;
         let response_dict = json::parse(&response_json)?;
+        let token_count = response_dict["candidates"][0]["tokenCount"]
+            .as_u64()
+            .ok_or_else(|| GeminiError::ParseError("Failed to extract token count".to_string()))?;
 
         let response_text = response_dict["candidates"][0]["content"]["parts"][0]["text"]
             .as_str()
