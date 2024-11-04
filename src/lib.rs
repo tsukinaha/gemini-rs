@@ -1,9 +1,11 @@
 use std::io;
+use harm_probability::HarmProbabilities;
 use reqwest::{Client, Method};
 use safety_settings::SafetySettings;
 use thiserror::Error;
 
 pub mod safety_settings;
+mod harm_probability;
 
 /// Error type for the Gemini API
 #[derive(Error, Debug)]
@@ -40,7 +42,7 @@ pub enum GeminiError {
 pub struct Conversation {
     token: String,
     model: String,
-    history: Vec<Response>,
+    history: Vec<Message>,
     safety_settings: SafetySettings
 }
 
@@ -48,7 +50,14 @@ pub struct Conversation {
 #[derive(Debug)]
 pub struct Response {
     pub text: String,
-    role: String
+    pub harm_probability: harm_probability::HarmProbabilities,
+}
+
+/// A part of a conversation, used to store history
+#[derive(Debug)]
+pub struct Message {
+    pub text: String,
+    pub role: String
 }
 
 impl Conversation {
@@ -72,7 +81,7 @@ impl Conversation {
     /// Sends a prompt to the Gemini API and returns the response
     pub async fn prompt(&mut self, input: &str) -> Result<Response, GeminiError> {
         self.history.push(
-            Response{ text: input.to_string(), role: "user".to_string() }
+            Message { text: input.to_string(), role: "user".to_string() }
         );
 
         let url = format!(
@@ -111,14 +120,27 @@ impl Conversation {
         let response_text = response_dict["candidates"][0]["content"]["parts"][0]["text"]
             .as_str()
             .ok_or_else(|| GeminiError::ParseError("Failed to extract response text".to_string()))?;
+        let safety_dict = &response_dict["candidates"][0]["safetyRatings"];
+        //println!("{0:?}", safety_dict);
+        //let response_safety = harm_probability::HarmProbabilities {
+        //    harrasment: harm_probability::probability_from_str(safety_dict[0]["probability"].as_str().unwrap()),
+        //    hate_speech: harm_probability::probability_from_str(safety_dict[1]["probability"].as_str().unwrap()),
+        //    sexually_explicit: harm_probability::probability_from_str(safety_dict[2]["probability"].as_str().unwrap()),
+        //    dangerous_content: harm_probability::probability_from_str(safety_dict[3]["probability"].as_str().unwrap()),
+        //    civic_integrity: harm_probability::probability_from_str(safety_dict[4]["probability"].as_str().unwrap()),
+        //};
+
+        for i in 
+
+        
 
         self.history.push(
-            Response { text: response_text.to_string(), role: "model".to_string() }
+            Message { text: response_text.to_string(), role: "model".to_string() }
         );
 
         Ok(Response {
             text: response_text.to_string(),
-            role: "model".to_string()
+            harm_probability: harm_probability::none()
         })
     }
 }

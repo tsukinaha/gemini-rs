@@ -22,13 +22,6 @@ impl BlockThreshold {
     }
 }
 
-pub enum HarmProbability {
-    Negligible,
-    Low,
-    Medium,
-    High
-}
-
 /// Safety settings for Gemini's responses
 #[derive(Debug)]
 pub struct SafetySettings {
@@ -110,3 +103,5 @@ pub fn custom(
         civic_integrity
     }
 }
+
+
