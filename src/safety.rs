@@ -30,11 +30,27 @@ enum HarmCategory {
         }
     }
 }
+pub fn get_fake_harm_category(input: &str) -> HarmCategory {
+    match input {
+        "HARM_CATEGORY_DEROGATORY" => HarmCategory::Derogatory,
+        "HARM_CATEGORY_TOXICITY" => HarmCategory::Toxicity,
+        "HARM_CATEGORY_VIOLENCE" => HarmCategory::Violence, 
+        "HARM_CATEGORY_SEXUAL" => HarmCategory::Sexual,
+        "HARM_CATEGORY_MEDICAL" => HarmCategory::Medical,
+        "HARM_CATEGORY_DANGEROUS" => HarmCategory::Dangerous,
+        "HARM_CATEGORY_HARASSMENT" => HarmCategory::Harassment,
+        "HARM_CATEGORY_HATE_SPEECH" => HarmCategory::HateSpeech,
+        "HARM_CATEGORY_SEXUALLY_EXPLICIT" => HarmCategory::SexuallyExplicit,
+        "HARM_CATEGORY_DANGEROUS_CONTENT" => HarmCategory::DangerousContent,
+        "HARM_CATEGORY_CIVIC_INTEGRITY" => HarmCategory::CivicIntergrity,
+        _ => HarmCategory::Unspecified,
+    }
+}
 
 #[derive(Debug)]
 enum HarmProbability {
     Unspecified,
-    Neglibible,
+    Negligible,
     Low,
     Medium,
     High,
@@ -42,11 +58,20 @@ enum HarmProbability {
     pub fn get_real(&self) -> &str {
         match self {
             Self::Unspecified => "HARM_PROBABILITY_UNSPECIFIED",
-            Self::Neglibible => "NEGLIGIBLE",
+            Self::Negligible => "NEGLIGIBLE",
             Self::Low => "LOW",
             Self::Medium => "MEDIUM",
             Self::High => "HIGH",
         }
+    }
+}
+pub fn get_fake_harm_probability(input: &str) -> HarmProbability {
+    match input {
+        "NEGLIGIBLE" => HarmProbability::Negligible,
+        "LOW" => HarmProbability::Low,
+        "MEDIUM" => HarmProbability::Medium,
+        "HIGH" => HarmProbability::High,
+        _ => HarmProbability::Unspecified,
     }
 }
 
@@ -58,6 +83,17 @@ enum HarmBlockThreshold {
     OnlyHigh,
     None,
     Off,
+} impl HarmBlockThreshold {
+    pub fn get_real(&self) -> &str {
+        match self {
+            Self::Unspecified => "HARM_BLOCK_THRESHOLD_UNSPECIFIED",
+            Self::LowAndAbove => "BLOCK_LOW_AND_ABOVE",
+            Self::MediumAndAbove => "BLOCK_MEDIUM_AND_ABOVE",
+            Self::OnlyHigh => "BLOCK_ONLY_HIGH",
+            Self::None => "BLOCK_NONE",
+            Self::Off => "OFF",
+        }
+    }
 }
 
 #[derive(Debug)]

@@ -104,7 +104,7 @@ impl Conversation {
         for i in self.safety_settings {
             data["safetySettings"].push(json::object! {
                 "category": i.category.get_real(),
-                "threshold": i.1.get_actual()
+                "threshold": i.threshold.get_real()
             })?
         };
 
@@ -122,18 +122,17 @@ impl Conversation {
         let response_text = response_dict["candidates"][0]["content"]["parts"][0]["text"]
             .as_str()
             .ok_or_else(|| GeminiError::ParseError("Failed to extract response text".to_string()))?;
-        let safety_dict = &response_dict["candidates"][0]["safetyRatings"];
-        //println!("{0:?}", safety_dict);
-        //let response_safety = harm_probability::HarmProbabilities {
-        //    harrasment: harm_probability::probability_from_str(safety_dict[0]["probability"].as_str().unwrap()),
-        //    hate_speech: harm_probability::probability_from_str(safety_dict[1]["probability"].as_str().unwrap()),
-        //    sexually_explicit: harm_probability::probability_from_str(safety_dict[2]["probability"].as_str().unwrap()),
-        //    dangerous_content: harm_probability::probability_from_str(safety_dict[3]["probability"].as_str().unwrap()),
-        //    civic_integrity: harm_probability::probability_from_str(safety_dict[4]["probability"].as_str().unwrap()),
-        //};
-
-
-        
+        let mut safety_rating = vec![];
+        for i in response_dict["candidates"][0]["safetyRatings"].members() {
+            safety_rating.push(safety::SafetyRating {
+                category: safety::get_fake_harm_category(
+                    i["category"].as_str().unwrap()
+                ),
+                probability: safety::get_fake_harm_probability(
+                    i["probability"].as_str().unwrap()
+                )
+            })
+        }
 
         self.history.push(
             Message { text: response_text.to_string(), role: "model".to_string() }
@@ -141,7 +140,7 @@ impl Conversation {
 
         Ok(Response {
             text: response_text.to_string(),
-            harm_probability: harm_probability::none()
+            safety_rating
         })
     }
 }
