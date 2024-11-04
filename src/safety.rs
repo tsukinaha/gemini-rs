@@ -1,16 +1,34 @@
+//! Handles everything related to safety 
+//!
+//! Is used to change what kind of messages will be blocked, as well as to show why
+//! a message was blocked
+
+/// Different harm categories that Gemini can block a message because of.
 #[derive(Debug)]
 pub enum HarmCategory {
+    /// Category is unspecified
     Unspecified,
+    /// **PaLM** - Negative or harmful comments targeting identity and/or protected attribute
     Derogatory,
+    /// **PaLM** - Content that is rude, disrespectful, or profane
     Toxicity,
+    /// **PaLM** - Describes scenarios depicting violence against an individual or group, or general descriptions of gore
     Violence,
+    /// **PaLM** - Contains references to sexual acts or other lewd content
     Sexual,
+    /// **PaLM** - Promotes unchecked medical advice
     Medical,
+    /// **PaLM** - Dangerous content that promotes, facilitates, or encourages harmful acts
     Dangerous,
+    /// **Gemini** - Harassment content
     Harassment,
+    /// **Gemini** - Hate speech and content
     HateSpeech,
+    /// **Gemini** - Sexually explicit content
     SexuallyExplicit,
+    /// **Gemini** - Dangerous content
     DangerousContent,
+    /// **Gemini** - Content that may be used to harm civic integrity
     CivicIntergrity,
 } impl HarmCategory {
     pub fn get_real(&self) -> &str {
@@ -29,24 +47,28 @@ pub enum HarmCategory {
             Self::CivicIntergrity => "HARM_CATEGORY_CIVIC_INTEGRITY",
         }
     }
-}
-pub fn get_fake_harm_category(input: &str) -> HarmCategory {
-    match input {
-        "HARM_CATEGORY_DEROGATORY" => HarmCategory::Derogatory,
-        "HARM_CATEGORY_TOXICITY" => HarmCategory::Toxicity,
-        "HARM_CATEGORY_VIOLENCE" => HarmCategory::Violence, 
-        "HARM_CATEGORY_SEXUAL" => HarmCategory::Sexual,
-        "HARM_CATEGORY_MEDICAL" => HarmCategory::Medical,
-        "HARM_CATEGORY_DANGEROUS" => HarmCategory::Dangerous,
-        "HARM_CATEGORY_HARASSMENT" => HarmCategory::Harassment,
-        "HARM_CATEGORY_HATE_SPEECH" => HarmCategory::HateSpeech,
-        "HARM_CATEGORY_SEXUALLY_EXPLICIT" => HarmCategory::SexuallyExplicit,
-        "HARM_CATEGORY_DANGEROUS_CONTENT" => HarmCategory::DangerousContent,
-        "HARM_CATEGORY_CIVIC_INTEGRITY" => HarmCategory::CivicIntergrity,
-        _ => HarmCategory::Unspecified,
+    pub fn get_fake(input: &str) -> HarmCategory {
+        match input {
+            "HARM_CATEGORY_DEROGATORY" => HarmCategory::Derogatory,
+            "HARM_CATEGORY_TOXICITY" => HarmCategory::Toxicity,
+            "HARM_CATEGORY_VIOLENCE" => HarmCategory::Violence, 
+            "HARM_CATEGORY_SEXUAL" => HarmCategory::Sexual,
+            "HARM_CATEGORY_MEDICAL" => HarmCategory::Medical,
+            "HARM_CATEGORY_DANGEROUS" => HarmCategory::Dangerous,
+            "HARM_CATEGORY_HARASSMENT" => HarmCategory::Harassment,
+            "HARM_CATEGORY_HATE_SPEECH" => HarmCategory::HateSpeech,
+            "HARM_CATEGORY_SEXUALLY_EXPLICIT" => HarmCategory::SexuallyExplicit,
+            "HARM_CATEGORY_DANGEROUS_CONTENT" => HarmCategory::DangerousContent,
+            "HARM_CATEGORY_CIVIC_INTEGRITY" => HarmCategory::CivicIntergrity,
+            _ => HarmCategory::Unspecified,
+        }
     }
 }
 
+/// The probability that a piece of content is harmful
+///
+/// The classification system gives the probability of the content being unsafe.
+/// This does not indicate the severity of harm for a piece of content.
 #[derive(Debug)]
 pub enum HarmProbability {
     Unspecified,
@@ -64,14 +86,14 @@ pub enum HarmProbability {
             Self::High => "HIGH",
         }
     }
-}
-pub fn get_fake_harm_probability(input: &str) -> HarmProbability {
-    match input {
-        "NEGLIGIBLE" => HarmProbability::Negligible,
-        "LOW" => HarmProbability::Low,
-        "MEDIUM" => HarmProbability::Medium,
-        "HIGH" => HarmProbability::High,
-        _ => HarmProbability::Unspecified,
+    pub fn get_fake(input: &str) -> HarmProbability {
+        match input {
+            "NEGLIGIBLE" => HarmProbability::Negligible,
+            "LOW" => HarmProbability::Low,
+            "MEDIUM" => HarmProbability::Medium,
+            "HIGH" => HarmProbability::High,
+            _ => HarmProbability::Unspecified,
+        }
     }
 }
 

@@ -125,10 +125,10 @@ impl Conversation {
         let mut safety_rating = vec![];
         for i in response_dict["candidates"][0]["safetyRatings"].members() {
             safety_rating.push(safety::SafetyRating {
-                category: safety::get_fake_harm_category(
+                category: safety::HarmCategory::get_fake(
                     i["category"].as_str().unwrap()
                 ),
-                probability: safety::get_fake_harm_probability(
+                probability: safety::HarmProbability::get_fake(
                     i["probability"].as_str().unwrap()
                 )
             })
