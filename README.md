@@ -14,9 +14,9 @@ async fn main() {
         "gemini-1.5-flash".to_string() // Replace with the desired model from https://ai.google.dev/gemini-api/docs/models/gemini
     );
 
-    let a = convo.prompt("If you had to describe Risk of Rain 2 in one word, what word would it be?").await.unwrap();
+    let a = convo.generate_content("If you had to describe Risk of Rain 2 in one word, what word would it be?").await.unwrap();
     println!("{0:?}", a.text);
-    let b = convo.prompt("Now explain your reasoning").await.unwrap();
+    let b = convo.generate_content("Now explain your reasoning").await.unwrap();
     println!("{0:?}", b.text);
 }
 ```
