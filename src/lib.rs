@@ -101,7 +101,7 @@ impl Conversation {
                 "role": i.role.clone()
             })?
         };
-        for i in self.safety_settings {
+        for i in &self.safety_settings {
             data["safetySettings"].push(json::object! {
                 "category": i.category.get_real(),
                 "threshold": i.threshold.get_real()

@@ -1,5 +1,5 @@
 #[derive(Debug)]
-enum HarmCategory {
+pub enum HarmCategory {
     Unspecified,
     Derogatory,
     Toxicity,
@@ -48,7 +48,7 @@ pub fn get_fake_harm_category(input: &str) -> HarmCategory {
 }
 
 #[derive(Debug)]
-enum HarmProbability {
+pub enum HarmProbability {
     Unspecified,
     Negligible,
     Low,
@@ -76,7 +76,7 @@ pub fn get_fake_harm_probability(input: &str) -> HarmProbability {
 }
 
 #[derive(Debug, Clone)]
-enum HarmBlockThreshold {
+pub enum HarmBlockThreshold {
     Unspecified,
     LowAndAbove,
     MediumAndAbove,
