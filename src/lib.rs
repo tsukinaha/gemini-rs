@@ -3,7 +3,7 @@ pub mod response;
 
 use std::io;
 use json::JsonValue;
-use reqwest::{Client, Method, Response};
+use reqwest::{Client, Method};
 use thiserror::Error;
 use response::GeminiResponse;
 
@@ -53,29 +53,23 @@ pub struct Message {
     pub role: String
 } impl Message {
     pub fn get_real(&self) -> JsonValue {
-        let mut object = json::object! {
-            "contents": []
+        let mut obj = json::object! {
+            "parts": [],
+            "role": self.role.clone()
         };
         for i in self.content.clone() {
-            object["contents"].push(
-                match i {
-                    Part::Text(input_string) => {
-                        json::object! {
-                            "text": input_string
-                        }
-                    }
-                    _ => todo!()
-                }
-            ).unwrap()
-        }
-        object
+            obj["parts"].push(json::object! {
+                "text": i.text
+            }).unwrap()
+        };
+        obj
     }
 }
 
+/// TODO: Update this part to support different files
 #[derive(Debug, Clone)]
-pub enum Part {
-    Text(String),
-    Image,
+pub struct Part {
+    text: String,
 }
 
 impl Conversation {
@@ -101,8 +95,12 @@ impl Conversation {
         self.safety_settings = settings;
     }
 
+    pub async fn prompt(&mut self, input: &str) -> Result<GeminiResponse, GeminiError> {
+        self.generate_content(vec![Part { text: input.to_string() }]).await
+    }
+
     /// Sends a prompt to the Gemini API and returns the response
-    pub async fn generate_content(&mut self, input: Vec<Part>) -> Result<Response, GeminiError> {
+    pub async fn generate_content(&mut self, input: Vec<Part>) -> Result<GeminiResponse, GeminiError> {
         self.history.push(
             Message { content: input.clone(), role: "user".to_string() }
         );
@@ -117,10 +115,7 @@ impl Conversation {
             "contents": []
         };
         for i in self.history.iter() {
-            data["contents"].push(json::object! {
-                "parts": [{"text": i.text.clone()}],
-                "role": i.role.clone()
-            })?
+            data["contents"].push(i.get_real())?
         };
         for i in &self.safety_settings {
             data["safetySettings"].push(json::object! {
@@ -139,17 +134,21 @@ impl Conversation {
         let http_response = client.execute(request).await?;
         let response_json = http_response.text().await?;
         let response_dict = json::parse(&response_json)?;
-        let token_count = response_dict["candidates"][0]["tokenCount"]
+        let candidate = response_dict["candidates"][0].clone();
+        let token_count = response_dict["usageMetadata"]["candidatesTokenCount"]
             .as_u64()
             .ok_or_else(|| GeminiError::ParseError("Failed to extract token count".to_string()))?;
-        let finish_reason = response::FinishReason::get_fake(response_dict["finishReason"].as_str().unwrap());
+        let finish_reason = response::FinishReason::get_fake(candidate["finishReason"].as_str().unwrap());
 
-        let text = response_dict["candidates"][0]["content"]["parts"][0]["text"]
-            .as_str()
-            .ok_or_else(|| GeminiError::ParseError("Failed to extract response text".to_string()))?
-            .to_string();
+        let parts_dict = candidate["content"]["parts"].clone();
+        let mut content = vec![]; 
+        for i in parts_dict.members() {
+            let part = Part { text: i["text"].as_str().unwrap().to_string() };
+            content.push(part)
+        }
+
         let mut safety_rating = vec![];
-        for i in response_dict["candidates"][0]["safetyRatings"].members() {
+        for i in candidate["safetyRatings"].members() {
             safety_rating.push(safety::SafetyRating {
                 category: safety::HarmCategory::get_fake(
                     i["category"].as_str().unwrap()
@@ -161,11 +160,11 @@ impl Conversation {
         }
 
         self.history.push(
-            Message { text: text.clone(), role: "model".to_string() }
+            Message { content: content.clone(), role: "model".to_string() }
         );
 
-        Ok(Response {
-            text,
+        Ok(GeminiResponse {
+            content,
             safety_rating,
             token_count,
             finish_reason,

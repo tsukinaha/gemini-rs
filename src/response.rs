@@ -1,4 +1,4 @@
-use crate::safety;
+use crate::{safety, Part};
 
 #[derive(Debug)]
 pub enum FinishReason {
@@ -34,9 +34,13 @@ pub enum FinishReason {
 /// Holds a response from Gemini
 #[derive(Debug)]
 pub struct GeminiResponse {
-    pub text: String,
+    pub content: Vec<Part>,
     pub safety_rating: Vec<safety::SafetyRating>,
     pub token_count: u64,
     pub finish_reason: FinishReason,
+} impl GeminiResponse {
+    pub fn get_text(&self) -> String {
+        self.content[0].text.clone()
+    }
 }
 
