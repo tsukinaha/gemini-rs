@@ -11,7 +11,7 @@ pub enum FinishReason {
     Other,
     Blocklist,
     Prohibited,
-    SPII,
+    Spii,
     /// Currently unused as function calling is not supported
     BadCall,
 } impl FinishReason {
@@ -24,7 +24,7 @@ pub enum FinishReason {
             "LANGUAGE" => Self::Language,
             "OTHER" => Self::Other,
             "BLOCKLIST" => Self::Blocklist,
-            "SPII" => Self::SPII,
+            "SPII" => Self::Spii,
             "MALFORMED_FUNCTION_CALL" => Self::BadCall,
             _ => Self::Unspecified,
         }
