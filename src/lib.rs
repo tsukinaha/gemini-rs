@@ -25,6 +25,9 @@ pub enum GeminiError {
     /// Error type for parsing
     #[error("Response parsing failed: {0}")]
     ParseError(String),
+
+    #[error("Invalid model: {0}")]
+    ModelError(String)
 }
 
 /// Represents a conversation with Gemini
@@ -95,12 +98,22 @@ impl Conversation {
         self.safety_settings = settings;
     }
 
-    pub async fn prompt(&mut self, input: &str) -> Result<GeminiResponse, GeminiError> {
-        self.generate_content(vec![Part { text: input.to_string() }]).await
+    pub async fn prompt(&mut self, input: &str) -> String {
+        match self.generate_content(vec![Part { text: input.to_string() }]).await {
+            Ok(i) => i.get_text(),
+            Err(e) => format!("Error: {0}", e)
+        }
     }
 
     /// Sends a prompt to the Gemini API and returns the response
     pub async fn generate_content(&mut self, input: Vec<Part>) -> Result<GeminiResponse, GeminiError> {
+        let model_verified = verify_model(&self.model, &self.token).await;
+        if !model_verified {
+            return Err(
+                GeminiError::ModelError("Invalid Model. Please use get_models() to get a list of valid models".to_string())
+            );
+        }
+
         self.history.push(
             Message { content: input.clone(), role: "user".to_string() }
         );
@@ -195,3 +208,7 @@ pub async fn get_models(token: &str) -> Result<Vec<String>, GeminiError> {
     Ok(models) 
 }
 
+async fn verify_model(model_name: &str, token: &str) -> bool {
+    let models = get_models(token).await.unwrap();
+    models.contains(&model_name.to_string())
+}
