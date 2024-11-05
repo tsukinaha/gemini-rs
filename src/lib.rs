@@ -1,8 +1,10 @@
+pub mod safety;
+pub mod response;
+
 use std::io;
 use reqwest::{Client, Method};
 use thiserror::Error;
-
-pub mod safety;
+use response::Response;
 
 /// Error type for the Gemini API
 #[derive(Error, Debug)]
@@ -41,14 +43,6 @@ pub struct Conversation {
     model: String,
     history: Vec<Message>,
     safety_settings: Vec<safety::SafetySetting>,
-}
-
-/// Holds a response from Gemini
-#[derive(Debug)]
-pub struct Response {
-    pub text: String,
-    pub safety_rating: Vec<safety::SafetyRating>,
-    pub token_count: u64,
 }
 
 /// A part of a conversation, used to store history
@@ -122,10 +116,12 @@ impl Conversation {
         let token_count = response_dict["candidates"][0]["tokenCount"]
             .as_u64()
             .ok_or_else(|| GeminiError::ParseError("Failed to extract token count".to_string()))?;
+        let finish_reason = response::FinishReason::get_fake(response_dict["finishReason"].as_str().unwrap());
 
-        let response_text = response_dict["candidates"][0]["content"]["parts"][0]["text"]
+        let text = response_dict["candidates"][0]["content"]["parts"][0]["text"]
             .as_str()
-            .ok_or_else(|| GeminiError::ParseError("Failed to extract response text".to_string()))?;
+            .ok_or_else(|| GeminiError::ParseError("Failed to extract response text".to_string()))?
+            .to_string();
         let mut safety_rating = vec![];
         for i in response_dict["candidates"][0]["safetyRatings"].members() {
             safety_rating.push(safety::SafetyRating {
@@ -139,13 +135,14 @@ impl Conversation {
         }
 
         self.history.push(
-            Message { text: response_text.to_string(), role: "model".to_string() }
+            Message { text: text.clone(), role: "model".to_string() }
         );
 
         Ok(Response {
-            text: response_text.to_string(),
+            text,
             safety_rating,
             token_count,
+            finish_reason,
         })
     }
 }
