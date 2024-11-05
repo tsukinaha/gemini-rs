@@ -1,7 +1,7 @@
 pub mod safety;
 pub mod response;
 
-use std::io;
+use std::{fmt::format, io};
 use json::JsonValue;
 use reqwest::{Client, Method};
 use thiserror::Error;
@@ -95,11 +95,21 @@ impl Conversation {
         self.safety_settings = settings;
     }
 
-    pub async fn prompt(&mut self, input: &str) -> Result<GeminiResponse, GeminiError> {
-        self.generate_content(vec![Part { text: input.to_string() }]).await
+    /// Sends a simple text prompt to the Gemini API and returns the text response.
+    /// 
+    /// **NOTE:** This function returns a string, so in case of error messages, it will simply
+    /// return the error message. This will give you less flexibility when handling errors,
+    /// but is fine for most cases, like prototyping.
+    pub async fn prompt(&mut self, input: &str) -> String {
+        match self.generate_content(vec![Part { text: input.to_string() }]).await {
+            Ok(i) => i.get_text(),
+            Err(e) => format!("Error: {0}", e)
+        }
     }
 
-    /// Sends a prompt to the Gemini API and returns the response
+    /// Sends a list of parts to the Gemini API and returns the response.
+    /// 
+    /// This is more complicated than [Conversation::prompt], but is needed in some cases, like images
     pub async fn generate_content(&mut self, input: Vec<Part>) -> Result<GeminiResponse, GeminiError> {
         self.history.push(
             Message { content: input.clone(), role: "user".to_string() }
