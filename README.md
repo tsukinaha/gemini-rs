@@ -14,16 +14,16 @@ async fn main() {
         "gemini-1.5-flash".to_string() // Replace with the desired model from https://ai.google.dev/gemini-api/docs/models/gemini
     );
 
-    let a = convo.generate_content("If you had to describe Risk of Rain 2 in one word, what word would it be?").await.unwrap();
-    println!("{0:?}", a.text);
-    let b = convo.generate_content("Now explain your reasoning").await.unwrap();
-    println!("{0:?}", b.text);
+    let a = convo.prompt("If you had to describe Risk of Rain 2 in one word, what word would it be?").await;
+    println!("{a}");
+    let b = convo.prompt("Now explain your reasoning").await;
+    println!("{b}");
 }
 ```
 
 # Roadmap
 - [x] Error handling
 - [x] Conversation history
-- [x] Useless refactor for no good reason (*cry for help*)
+- [x] Useless refactor for no good reason (*cry for help*) (x2)
 - [ ] Make more operations for conversations (saving, loading, etc.)
 - [ ] Image support
