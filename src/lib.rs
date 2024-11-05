@@ -2,7 +2,7 @@ pub mod safety;
 pub mod response;
 
 use std::io;
-use reqwest::{Client, Method};
+use reqwest::{Client, Method, Response};
 use thiserror::Error;
 use response::Response;
 
@@ -53,6 +53,11 @@ pub struct Message {
 }
 
 impl Conversation {
+
+    pub struct Request {
+
+    }
+
     /// Creates a new conversation instance
     pub fn new(token: String, model: String) -> Self {
         Self {
@@ -102,7 +107,8 @@ impl Conversation {
                 "threshold": i.threshold.get_real()
             })?
         };
-
+    }
+    pub fn execute_request(request: Request) -> Result<Response, GeminiError> {
         let client = Client::new();
         let request = client
             .request(Method::POST, url)
