@@ -2,9 +2,10 @@ pub mod safety;
 pub mod response;
 
 use std::io;
+use json::JsonValue;
 use reqwest::{Client, Method, Response};
 use thiserror::Error;
-use response::Response;
+use response::GeminiResponse;
 
 /// Error type for the Gemini API
 #[derive(Error, Debug)]
@@ -48,16 +49,36 @@ pub struct Conversation {
 /// A part of a conversation, used to store history
 #[derive(Debug)]
 pub struct Message {
-    pub text: String,
+    pub content: Vec<Part>,
     pub role: String
+} impl Message {
+    pub fn get_real(&self) -> JsonValue {
+        let mut object = json::object! {
+            "contents": []
+        };
+        for i in self.content.clone() {
+            object["contents"].push(
+                match i {
+                    Part::Text(input_string) => {
+                        json::object! {
+                            "text": input_string
+                        }
+                    }
+                    _ => todo!()
+                }
+            ).unwrap()
+        }
+        object
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Part {
+    Text(String),
+    Image,
 }
 
 impl Conversation {
-
-    pub struct Request {
-
-    }
-
     /// Creates a new conversation instance
     pub fn new(token: String, model: String) -> Self {
         Self {
@@ -81,9 +102,9 @@ impl Conversation {
     }
 
     /// Sends a prompt to the Gemini API and returns the response
-    pub async fn generate_content(&mut self, input: &str) -> Result<Response, GeminiError> {
+    pub async fn generate_content(&mut self, input: Vec<Part>) -> Result<Response, GeminiError> {
         self.history.push(
-            Message { text: input.to_string(), role: "user".to_string() }
+            Message { content: input.clone(), role: "user".to_string() }
         );
 
         let url = format!(
@@ -107,8 +128,7 @@ impl Conversation {
                 "threshold": i.threshold.get_real()
             })?
         };
-    }
-    pub fn execute_request(request: Request) -> Result<Response, GeminiError> {
+
         let client = Client::new();
         let request = client
             .request(Method::POST, url)

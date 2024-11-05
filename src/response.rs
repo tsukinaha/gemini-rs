@@ -33,7 +33,7 @@ pub enum FinishReason {
 
 /// Holds a response from Gemini
 #[derive(Debug)]
-pub struct Response {
+pub struct GeminiResponse {
     pub text: String,
     pub safety_rating: Vec<safety::SafetyRating>,
     pub token_count: u64,
