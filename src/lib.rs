@@ -1,3 +1,6 @@
+//! **For a quick setup guide / test, check the README on [crates.io](https://crates.io/crates/gemini-rs),
+//! or on [GitHub](https://github.com/Shuflduf/gemini-rs)**
+
 pub mod safety;
 pub mod response;
 
@@ -66,7 +69,7 @@ pub struct Message {
     }
 }
 
-/// TODO: Update this part to support different files
+/// TODO: Update this to support different files
 #[derive(Debug, Clone)]
 pub struct Part {
     text: String,
