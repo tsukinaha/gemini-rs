@@ -1,6 +1,7 @@
 pub mod safety;
 pub mod response;
 pub mod files;
+pub mod image_test;
 
 use std::io;
 use files::FileData;
@@ -11,7 +12,7 @@ use response::GeminiResponse;
 
 /// Error type for the Gemini API
 #[derive(Error, Debug)]
-pub enum GeminiError {
+pub enum GeminiError<'a> {
     /// Error type for HTTP request errors
     #[error("HTTP request failed: {0}")]
     RequestError(#[from] reqwest::Error),
@@ -26,10 +27,10 @@ pub enum GeminiError {
     
     /// Error type for parsing
     #[error("Response parsing failed: {0}")]
-    ParseError(String),
+    ParseError(&'a str),
 
     #[error("{0}")]
-    ModelError(String),
+    ModelError(&'a str),
 
     #[error("{0}")]
     KeyError(String),
@@ -115,7 +116,7 @@ impl Conversation {
     /// Sends a prompt to the Gemini API and returns the response
     pub async fn generate_content(&mut self, input: Vec<Part>) -> Result<GeminiResponse, GeminiError> {
         let model_verified = verify_inputs(&self.model, &self.token).await;
-        if model_verified.is_err() { return Err(model_verified.unwrap_err()) };
+        if let Err(ref _e) = model_verified { return Err(model_verified.unwrap_err()) };
 
         self.history.push(
             Message { content: input.clone(), role: "user".to_string() }
@@ -153,7 +154,7 @@ impl Conversation {
         let candidate = response_dict["candidates"][0].clone();
         let token_count = response_dict["usageMetadata"]["candidatesTokenCount"]
             .as_u64()
-            .ok_or_else(|| GeminiError::ParseError("Failed to extract token count".to_string()))?;
+            .ok_or_else(|| GeminiError::ParseError("Failed to extract token count"))?;
         let finish_reason = response::FinishReason::get_fake(candidate["finishReason"].as_str().unwrap());
 
         let file_data = FileData { file_uri: "".to_string() };
@@ -218,7 +219,7 @@ fn format_models(input: JsonValue) -> Vec<String> {
     models
 }
 
-async fn verify_inputs(model_name: &str, token: &str) -> Result<(), GeminiError> {
+async fn verify_inputs<'a>(model_name: &'a str, token: &'a str) -> Result<(), GeminiError<'a>> {
     //let models = get_models(token).await.unwrap();
     //models.contains(&model_name.to_string())
     let request = reqwest::get(format!(
@@ -232,7 +233,7 @@ async fn verify_inputs(model_name: &str, token: &str) -> Result<(), GeminiError>
     };
     let models = format_models(response_json);
     if !models.contains(&model_name.to_string()) {
-        return Err(GeminiError::ModelError("Invalid model. Please pass a valid model from get_models()".to_string()))
+        return Err(GeminiError::ModelError("Invalid model. Please pass a valid model from get_models()"))
     }
     Ok(())
 }
