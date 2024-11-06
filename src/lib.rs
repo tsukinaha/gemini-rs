@@ -1,7 +1,9 @@
 pub mod safety;
 pub mod response;
+pub mod files;
 
 use std::io;
+use files::FileData;
 use json::JsonValue;
 use reqwest::{Client, Method};
 use thiserror::Error;
@@ -26,8 +28,11 @@ pub enum GeminiError {
     #[error("Response parsing failed: {0}")]
     ParseError(String),
 
-    #[error("Invalid model: {0}")]
-    ModelError(String)
+    #[error("{0}")]
+    ModelError(String),
+
+    #[error("{0}")]
+    KeyError(String),
 }
 
 /// Represents a conversation with Gemini
@@ -73,6 +78,7 @@ pub struct Message {
 #[derive(Debug, Clone)]
 pub struct Part {
     text: String,
+    file_data: files::FileData,
 }
 
 impl Conversation {
@@ -99,20 +105,17 @@ impl Conversation {
     }
 
     pub async fn prompt(&mut self, input: &str) -> String {
-        match self.generate_content(vec![Part { text: input.to_string() }]).await {
+        let file_data = FileData { file_uri: "".to_string() };
+        match self.generate_content(vec![Part { text: input.to_string(), file_data }]).await {
             Ok(i) => i.get_text(),
-            Err(e) => format!("Error: {0}", e)
+            Err(e) => format!("{e}")
         }
     }
 
     /// Sends a prompt to the Gemini API and returns the response
     pub async fn generate_content(&mut self, input: Vec<Part>) -> Result<GeminiResponse, GeminiError> {
-        let model_verified = verify_model(&self.model, &self.token).await;
-        if !model_verified {
-            return Err(
-                GeminiError::ModelError("Invalid Model. Please use get_models() to get a list of valid models".to_string())
-            );
-        }
+        let model_verified = verify_inputs(&self.model, &self.token).await;
+        if model_verified.is_err() { return Err(model_verified.unwrap_err()) };
 
         self.history.push(
             Message { content: input.clone(), role: "user".to_string() }
@@ -153,10 +156,12 @@ impl Conversation {
             .ok_or_else(|| GeminiError::ParseError("Failed to extract token count".to_string()))?;
         let finish_reason = response::FinishReason::get_fake(candidate["finishReason"].as_str().unwrap());
 
+        let file_data = FileData { file_uri: "".to_string() };
+
         let parts_dict = candidate["content"]["parts"].clone();
         let mut content = vec![]; 
         for i in parts_dict.members() {
-            let part = Part { text: i["text"].as_str().unwrap().to_string() };
+            let part = Part { text: i["text"].as_str().unwrap().to_string(), file_data: file_data.clone() };
             content.push(part)
         }
 
@@ -195,20 +200,39 @@ impl Conversation {
 /// - `gemini-1.5-pro`
 /// - `gemini-1.0-pro`
 pub async fn get_models(token: &str) -> Result<Vec<String>, GeminiError> {
-    let mut models: Vec<String> = vec![];
     let request = reqwest::get(format!(
         "https://generativelanguage.googleapis.com/v1beta/models?key={0}",
         token
     )).await?.text().await?;
     let response_json = json::parse(&request)?;
-    for i in response_json["models"].members() {
-        models.push(i["name"].to_string().strip_prefix("models/").unwrap().to_string());
-    }
+    let models = format_models(response_json);
 
     Ok(models) 
 }
 
-async fn verify_model(model_name: &str, token: &str) -> bool {
-    let models = get_models(token).await.unwrap();
-    models.contains(&model_name.to_string())
+fn format_models(input: JsonValue) -> Vec<String> {
+    let mut models: Vec<String> = vec![];
+    for i in input["models"].members() {
+        models.push(i["name"].to_string().strip_prefix("models/").unwrap().to_string());
+    }
+    models
+}
+
+async fn verify_inputs(model_name: &str, token: &str) -> Result<(), GeminiError> {
+    //let models = get_models(token).await.unwrap();
+    //models.contains(&model_name.to_string())
+    let request = reqwest::get(format!(
+        "https://generativelanguage.googleapis.com/v1beta/models?key={0}",
+        token
+    )).await?.text().await?;
+    let response_json = json::parse(&request)?;
+    if response_json.has_key("error") {
+        println!("{0}", response_json["error"].dump());
+        return Err(GeminiError::KeyError(format!("{0}: {1}", response_json["error"]["code"], response_json["error"]["message"])));
+    };
+    let models = format_models(response_json);
+    if !models.contains(&model_name.to_string()) {
+        return Err(GeminiError::ModelError("Invalid model. Please pass a valid model from get_models()".to_string()))
+    }
+    Ok(())
 }

@@ -24,4 +24,5 @@ Cargo.lock
 # MAIN.RS 
 # Only here because this is a library, and I use main.rs for testing purposes.
 src/main.rs
+src/Testing/
 
