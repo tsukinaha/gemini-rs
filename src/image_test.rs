@@ -22,6 +22,7 @@ impl Conversation {
             .header("X-Goog-Upload-Header-Content-Length", file_size)
             .header("X-Goog-Upload-Header-Content-Type", mime_filetype)
             .header("Content-Type", "application/json")
+            .body(r#""file": {"display_name": ""#.to_owned() + image_path.rsplit("/").last().unwrap() + r#""}}"#)
             .build();
 
         let http_response = client.execute(request?).await?;
