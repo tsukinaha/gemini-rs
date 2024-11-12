@@ -13,6 +13,8 @@ impl Conversation {
             "https://generativelanguage.googleapis.com/upload/v1beta/files?key={0}",
             std::env::var("GEMINI_API_KEY").unwrap()
         );
+        let file_name = image_path.split("/").last().unwrap();
+        println!("{0}\n", file_name);
 
         let client = reqwest::Client::new();
 
@@ -24,10 +26,10 @@ impl Conversation {
             .header("X-Goog-Upload-Header-Content-Length", file_size)
             .header("X-Goog-Upload-Header-Content-Type", mime_filetype)
             .header("Content-Type", "application/json")
-            .body(r#""file": {"display_name": ""#.to_owned() + image_path.rsplit("/").last().unwrap() + "}}")
+            .body(r#""file": {"display_name": ""#.to_owned() + file_name + "}}")
             .send();
 
-        println!("{0:?}", metadata_request.await.unwrap());
+        println!("{0:?}\n", metadata_request.await.unwrap());
 
         // Upload the actual bytes
         let bytes_request = client
@@ -38,9 +40,17 @@ impl Conversation {
             .body(fs::read(image_path).unwrap())
             .send();
 
-        println!("{0:?}", bytes_request.await.unwrap());
+        println!("{0:?}\n", bytes_request.await.unwrap());
 
+        // TEST
+        let test_request = client
+            .request(Method::GET,
+                "https://generativelanguage.googleapis.com/v1beta/files/".to_owned()
+                + file_name
+            )
+            .send();
 
+        println!("{0:?}\n", test_request.await.unwrap());
 
         Ok(())
     }
