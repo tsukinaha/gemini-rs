@@ -13,7 +13,7 @@ impl Conversation {
             "https://generativelanguage.googleapis.com/upload/v1beta/files?key={0}",
             std::env::var("GEMINI_API_KEY").unwrap()
         );
-        let file_name = image_path.split("/").last().unwrap();
+        let file_name = image_path.split("/").last().unwrap().split_once(".").unwrap().0;
         let data = r#"{"file": {"display_name": ""#.to_owned() + file_name + r#""}}"#;
 
         let client = reqwest::Client::new();
@@ -27,39 +27,42 @@ impl Conversation {
             .header("X-Goog-Upload-Header-Content-Type", mime_filetype)
             .header("Content-Type", "application/json")
             .body(data)
-            .send();
+            .send()
+            .await
+            .unwrap();
 
-        Self::print_json(metadata_request.await.unwrap()).await;
+        let metadata_req_headers = metadata_request.headers();
+        println!("{metadata_req_headers:?}\n");
+        let upload_url = metadata_req_headers.get("x-goog-upload-url").unwrap().to_str().unwrap();
 
         // Upload the actual bytes
         let bytes_request = client
-            .request(Method::POST, &url)
+            .request(Method::POST, upload_url)
             .header("Content-Length", file_size)
             .header("X-Goog-Upload-Offset", 0)
             .header("X-Goog-Upload-Command", "upload, finalize")
             .body(fs::read(image_path).unwrap())
-            .send();
+            .send()
+            .await;
 
-        println!("{0:?}\n", bytes_request.await.unwrap());
+        println!("{0:?}\n", bytes_request.unwrap());
 
         // TEST
-        let test_request = client
-            .request(Method::GET,
-                "https://generativelanguage.googleapis.com/v1beta/files/".to_owned()
-                + file_name
-            )
-            .send();
+        let file_list_request = client
+            .request(Method::GET, format!(
+                "https://generativelanguage.googleapis.com/v1beta/files/?key={0}",
+                std::env::var("GEMINI_API_KEY").unwrap()
+            ))
+            .send()
+            .await
+            .unwrap();
 
-        println!("{0:?}\n", test_request.await.unwrap());
+        let files_list = &json::parse(&file_list_request.text().await.unwrap()).unwrap()["files"];
+        println!("{0:?}", files_list[0]["uri"].as_str().unwrap());
+
+        //println!("{0:?}\n", test_request.await.unwrap());
 
         Ok(())
-    }
-
-    async fn print_json(input: reqwest::Response) {
-        let input_text = input.text().await;
-        println!("{input_text:?}");
-        //let input_json = json::parse(&input_text).unwrap();
-        //println!("{0}\n", input_json.dump());
     }
 
     fn get_mime_filetype(input: &str) -> String {
