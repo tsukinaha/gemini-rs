@@ -33,14 +33,18 @@ pub enum FinishReason {
 
 /// Holds a response from Gemini
 #[derive(Debug)]
-pub struct GeminiResponse {
-    pub content: Vec<Part>,
+pub struct GeminiResponse<'a> {
+    pub content: Vec<Part<'a>>,
     pub safety_rating: Vec<safety::SafetyRating>,
     pub token_count: u64,
     pub finish_reason: FinishReason,
-} impl GeminiResponse {
+} impl<'a> GeminiResponse<'a> {
     pub fn get_text(&self) -> String {
-        self.content[0].text.clone()
+        //self.content[0].text.clone()
+        if let Part::Text(text) = self.content[0] {
+            return text.to_string()
+        };
+        "".to_string()
     }
 }
 

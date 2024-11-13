@@ -1,10 +1,9 @@
 pub mod safety;
 pub mod response;
 pub mod files;
-pub mod image_test;
 
 use std::io;
-use files::FileData;
+use files::GeminiFile;
 use json::JsonValue;
 use reqwest::{Client, Method};
 use thiserror::Error;
@@ -57,29 +56,44 @@ pub struct Conversation {
 
 /// A part of a conversation, used to store history
 #[derive(Debug)]
-pub struct Message {
-    pub content: Vec<Part>,
+pub struct Message<'a> {
+    pub content: Vec<Part<'a>>,
     pub role: String
-} impl Message {
+} impl<'a> Message<'a> {
     pub fn get_real(&self) -> JsonValue {
         let mut obj = json::object! {
             "parts": [],
             "role": self.role.clone()
         };
         for i in self.content.clone() {
-            obj["parts"].push(json::object! {
-                "text": i.text
-            }).unwrap()
+            obj["parts"].push(
+                match i {
+                    Part::Text(text) => json::object! {
+                        "text": text
+                    },
+                    Part::File(file) => json::object! {
+                        "file_data": {
+                            "mime_type": file.mime_type,
+                            "file_uri": file.file_uri
+                        }
+                    }
+                }
+            ).unwrap()
         };
         obj
     }
 }
 
 /// TODO: Update this part to support different files
+//#[derive(Debug, Clone)]
+//pub struct Part {
+//    text: String,
+//    file_data: files::GeminiFile,
+//}
 #[derive(Debug, Clone)]
-pub struct Part {
-    text: String,
-    file_data: files::FileData,
+pub enum Part<'a> {
+    Text(&'a str),
+    File(GeminiFile<'a>)
 }
 
 impl Conversation {
@@ -106,15 +120,14 @@ impl Conversation {
     }
 
     pub async fn prompt(&mut self, input: &str) -> String {
-        let file_data = FileData { file_uri: "".to_string() };
-        match self.generate_content(vec![Part { text: input.to_string(), file_data }]).await {
+        match self.generate_content(vec![Part::Text(input)]).await {
             Ok(i) => i.get_text(),
             Err(e) => format!("{e}")
         }
     }
 
     /// Sends a prompt to the Gemini API and returns the response
-    pub async fn generate_content(&mut self, input: Vec<Part>) -> Result<GeminiResponse, GeminiError> {
+    pub async fn generate_content<'a>(&mut self, input: Vec<Part<'a>>) -> Result<GeminiResponse, GeminiError> {
         let model_verified = verify_inputs(&self.model, &self.token).await;
         if let Err(ref _e) = model_verified { return Err(model_verified.unwrap_err()) };
 
@@ -157,12 +170,13 @@ impl Conversation {
             .ok_or_else(|| GeminiError::ParseError("Failed to extract token count"))?;
         let finish_reason = response::FinishReason::get_fake(candidate["finishReason"].as_str().unwrap());
 
-        let file_data = FileData { file_uri: "".to_string() };
+        let file_data = GeminiFile::none();
 
         let parts_dict = candidate["content"]["parts"].clone();
         let mut content = vec![]; 
         for i in parts_dict.members() {
-            let part = Part { text: i["text"].as_str().unwrap().to_string(), file_data: file_data.clone() };
+            //let part = Part { text: i["text"].as_str().unwrap().to_string(), file_data: file_data.clone() };
+            let part = Part::Text(i["text"].as_str().unwrap());
             content.push(part)
         }
 
