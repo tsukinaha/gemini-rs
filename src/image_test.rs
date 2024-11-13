@@ -14,7 +14,7 @@ impl Conversation {
             std::env::var("GEMINI_API_KEY").unwrap()
         );
         let file_name = image_path.split("/").last().unwrap();
-        println!("{0}\n", file_name);
+        let data = r#"{"file": {"display_name": ""#.to_owned() + file_name + r#""}}"#;
 
         let client = reqwest::Client::new();
 
@@ -26,10 +26,10 @@ impl Conversation {
             .header("X-Goog-Upload-Header-Content-Length", file_size)
             .header("X-Goog-Upload-Header-Content-Type", mime_filetype)
             .header("Content-Type", "application/json")
-            .body(r#""file": {"display_name": ""#.to_owned() + file_name + "}}")
+            .body(data)
             .send();
 
-        println!("{0:?}\n", metadata_request.await.unwrap());
+        Self::print_json(metadata_request.await.unwrap()).await;
 
         // Upload the actual bytes
         let bytes_request = client
@@ -55,6 +55,13 @@ impl Conversation {
         Ok(())
     }
 
+    async fn print_json(input: reqwest::Response) {
+        let input_text = input.text().await;
+        println!("{input_text:?}");
+        //let input_json = json::parse(&input_text).unwrap();
+        //println!("{0}\n", input_json.dump());
+    }
+
     fn get_mime_filetype(input: &str) -> String {
         const IMAGES: [&str; 3] = [
             "jpeg",
@@ -62,7 +69,7 @@ impl Conversation {
             "webp",
         ];
         if IMAGES.contains(&input) {
-            format!("images/{0}", input)
+            format!("image/{0}", input)
         } else {
             "a".to_string()
         }
