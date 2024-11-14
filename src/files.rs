@@ -23,7 +23,10 @@ pub struct GeminiFile {
     }
 }
 
-/// Uploads an image to the Google API
+/// Uploads an file to the Google API
+///
+/// Use a mime filetype from <https://www.iana.org/assignments/media-types/media-types.xhtml>,
+/// unfortunately this is neccassary for Google to properly proccess the file.
 /// ## Example:
 /// ```rust
 /// let api_key = env::var("GEMINI_API_KEY").unwrap(); 
@@ -31,21 +34,18 @@ pub struct GeminiFile {
 ///     api_key.clone(),
 ///     "gemini-1.5-flash".to_string()
 /// );
-/// let image = upload_image("Testing/cat.png", &api_key).await.unwrap();
+/// let image = upload_image("Testing/cat.png", "image/png", &api_key).await.unwrap();
 /// let response = convo.generate_content(vec![
 ///     Part::Text("Describe this scene".to_string()),
 ///     Part::File(image)
 /// ]).await.unwrap();
 /// println!("{0}", response.get_text());
 /// ```
-
-pub async fn upload_image<'a>(image_path: &'a str, api_key: &'a str) -> 
+pub async fn upload_file<'a>(image_path: &'a str, mime_type: &'a str, api_key: &'a str) -> 
         Result<GeminiFile, GeminiError<'a>> {
 
     let file = std::fs::File::open(image_path)?;
     let file_size = file.metadata().unwrap().len();
-    let file_type = image_path.rsplit_once('.').unwrap().1;
-    let mime_filetype = get_mime_filetype(file_type);
     let url = format!(
         "https://generativelanguage.googleapis.com/upload/v1beta/files?key={0}",
         api_key
@@ -61,7 +61,7 @@ pub async fn upload_image<'a>(image_path: &'a str, api_key: &'a str) ->
         .header("X-Goog-Upload-Protocol", "resumable")
         .header("X-Goog-Upload-Command", "start")
         .header("X-Goog-Upload-Header-Content-Length", file_size)
-        .header("X-Goog-Upload-Header-Content-Type", &mime_filetype)
+        .header("X-Goog-Upload-Header-Content-Type", mime_type)
         .header("Content-Type", "application/json")
         .body(data)
         .send()
@@ -95,20 +95,6 @@ pub async fn upload_image<'a>(image_path: &'a str, api_key: &'a str) ->
 
     Ok(GeminiFile{
         file_uri: files_list[0]["uri"].as_str().unwrap().to_string(),
-        mime_type: mime_filetype
+        mime_type: mime_type.to_string()
     })
 }
-
-fn get_mime_filetype(input: &str) -> String {
-    const IMAGES: [&str; 3] = [
-        "jpeg",
-        "png",
-        "webp",
-    ];
-    if IMAGES.contains(&input) {
-        format!("image/{0}", input)
-    } else {
-        "a".to_string()
-    }
-}
-
