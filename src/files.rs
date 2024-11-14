@@ -45,11 +45,10 @@ pub async fn upload_image<'a>(image_path: &'a str, api_key: &'a str) ->
         .unwrap();
 
     let metadata_req_headers = metadata_request.headers();
-    println!("{metadata_req_headers:?}\n");
     let upload_url = metadata_req_headers.get("x-goog-upload-url").unwrap().to_str().unwrap();
 
     // Upload the actual bytes
-    let bytes_request = client
+    let _bytes_request = client
         .request(Method::POST, upload_url)
         .header("Content-Length", file_size)
         .header("X-Goog-Upload-Offset", 0)
@@ -57,8 +56,6 @@ pub async fn upload_image<'a>(image_path: &'a str, api_key: &'a str) ->
         .body(std::fs::read(image_path).unwrap())
         .send()
         .await;
-
-    println!("{0:?}\n", bytes_request.unwrap());
 
     // TEST
     let file_list_request = client
@@ -71,8 +68,6 @@ pub async fn upload_image<'a>(image_path: &'a str, api_key: &'a str) ->
         .unwrap();
 
     let files_list = &json::parse(&file_list_request.text().await.unwrap()).unwrap()["files"];
-
-    //println!("{0:?}\n", test_request.await.unwrap());
 
     Ok(GeminiFile{
         file_uri: files_list[0]["uri"].as_str().unwrap().to_string(),

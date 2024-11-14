@@ -26,4 +26,6 @@ async fn main() {
 - [x] Conversation history
 - [x] Useless refactor for no good reason (*cry for help*) (x2)
 - [ ] Make more operations for conversations (saving, loading, etc.)
-- [ ] Image support
+- [x] Image support
+- [ ] Better documentation
+- [ ] 100% API coverage

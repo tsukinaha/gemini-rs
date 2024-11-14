@@ -56,10 +56,10 @@ pub struct Conversation {
 
 /// A part of a conversation, used to store history
 #[derive(Debug)]
-pub struct Message<'a> {
-    pub content: Vec<Part<'a>>,
+pub struct Message {
+    pub content: Vec<Part>,
     pub role: String
-} impl<'a> Message<'a> {
+} impl Message {
     pub fn get_real(&self) -> JsonValue {
         let mut obj = json::object! {
             "parts": [],
@@ -91,12 +91,12 @@ pub struct Message<'a> {
 //    file_data: files::GeminiFile,
 //}
 #[derive(Debug, Clone)]
-pub enum Part<'a> {
-    Text(&'a str),
-    File(GeminiFile<'a>)
+pub enum Part {
+    Text(String),
+    File(GeminiFile)
 }
 
-impl Conversation {
+impl<'a> Conversation {
     /// Creates a new conversation instance
     pub fn new(token: String, model: String) -> Self {
         Self {
@@ -119,15 +119,15 @@ impl Conversation {
         self.safety_settings = settings;
     }
 
-    pub async fn prompt(&mut self, input: &str) -> String {
-        match self.generate_content(vec![Part::Text(input)]).await {
+    pub async fn prompt(&mut self, input: &'a str) -> String {
+        match self.generate_content(vec![Part::Text(input.to_string())]).await {
             Ok(i) => i.get_text(),
             Err(e) => format!("{e}")
         }
     }
 
     /// Sends a prompt to the Gemini API and returns the response
-    pub async fn generate_content<'a>(&mut self, input: Vec<Part<'a>>) -> Result<GeminiResponse, GeminiError> {
+    pub async fn generate_content(&mut self, input: Vec<Part>) -> Result<GeminiResponse, GeminiError> {
         let model_verified = verify_inputs(&self.model, &self.token).await;
         if let Err(ref _e) = model_verified { return Err(model_verified.unwrap_err()) };
 
@@ -170,13 +170,10 @@ impl Conversation {
             .ok_or_else(|| GeminiError::ParseError("Failed to extract token count"))?;
         let finish_reason = response::FinishReason::get_fake(candidate["finishReason"].as_str().unwrap());
 
-        let file_data = GeminiFile::none();
-
         let parts_dict = candidate["content"]["parts"].clone();
         let mut content = vec![]; 
         for i in parts_dict.members() {
-            //let part = Part { text: i["text"].as_str().unwrap().to_string(), file_data: file_data.clone() };
-            let part = Part::Text(i["text"].as_str().unwrap());
+            let part = Part::Text(i["text"].as_str().unwrap().to_string());
             content.push(part)
         }
 
