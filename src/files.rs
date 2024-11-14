@@ -1,10 +1,4 @@
 //! Handles everything related to prompting Gemini with external files.
-//!
-//! Currently only supports:
-//! - [x] Images 
-//! - [ ] Text files
-//! - [ ] Documents
-//! - [ ] Videos
 use reqwest::Method;
 
 use crate::GeminiError;
