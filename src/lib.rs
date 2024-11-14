@@ -1,3 +1,5 @@
+//! # Check the README on the crates.io for an example
+//! I'll copy it here later
 pub mod safety;
 pub mod response;
 pub mod files;
@@ -84,12 +86,6 @@ pub struct Message {
     }
 }
 
-/// TODO: Update this part to support different files
-//#[derive(Debug, Clone)]
-//pub struct Part {
-//    text: String,
-//    file_data: files::GeminiFile,
-//}
 #[derive(Debug, Clone)]
 pub enum Part {
     Text(String),
@@ -107,9 +103,9 @@ impl<'a> Conversation {
         }
     }
 
-    /// Update the safety settings to different thresholds from [safety_settings]
+    /// Update the safety settings to different thresholds from [safety::SafetySetting]
     /// ## Example:
-    /// ```rs 
+    /// ```rust 
     /// let mut convo = Conversation::new(
     ///     "ABC123".to_string,
     ///     "gemini-1.5-flash".to_string

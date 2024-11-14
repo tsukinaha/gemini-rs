@@ -1,7 +1,15 @@
+//! Handles everything related to prompting Gemini with external files.
+//!
+//! Currently only supports:
+//! - [x] Images 
+//! - [ ] Text files
+//! - [ ] Documents
+//! - [ ] Videos
 use reqwest::Method;
 
 use crate::GeminiError;
 
+/// Stores a file used for prompting Gemini
 #[derive(Debug, Clone)]
 pub struct GeminiFile {
     pub file_uri: String,
@@ -14,6 +22,22 @@ pub struct GeminiFile {
         }
     }
 }
+
+/// Uploads an image to the Google API
+/// ## Example:
+/// ```rust
+/// let api_key = env::var("GEMINI_API_KEY").unwrap(); 
+/// let mut convo = Conversation::new(
+///     api_key.clone(),
+///     "gemini-1.5-flash".to_string()
+/// );
+/// let image = upload_image("Testing/cat.png", &api_key).await.unwrap();
+/// let response = convo.generate_content(vec![
+///     Part::Text("Describe this scene".to_string()),
+///     Part::File(image)
+/// ]).await.unwrap();
+/// println!("{0}", response.get_text());
+/// ```
 
 pub async fn upload_image<'a>(image_path: &'a str, api_key: &'a str) -> 
         Result<GeminiFile, GeminiError<'a>> {
