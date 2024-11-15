@@ -3,6 +3,7 @@
 pub mod safety;
 pub mod response;
 pub mod files;
+pub mod saving;
 
 use std::io;
 use files::GeminiFile;
