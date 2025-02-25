@@ -93,7 +93,7 @@ pub enum Part {
     File(GeminiFile)
 }
 
-impl<'a> Conversation {
+impl Conversation {
     /// Creates a new conversation instance
     pub fn new(token: String, model: String) -> Self {
         Self {
@@ -116,7 +116,7 @@ impl<'a> Conversation {
         self.safety_settings = settings;
     }
 
-    pub async fn prompt(&mut self, input: &'a str) -> String {
+    pub async fn prompt(&mut self, input: &str) -> String {
         match self.generate_content(vec![Part::Text(input.to_string())]).await {
             Ok(i) => i.get_text(),
             Err(e) => format!("{e}")
