@@ -123,7 +123,7 @@ impl Conversation {
             .await
         {
             Ok(i) => i.get_text(),
-            Err(e) => format!("{e}"),
+            Err(e) => e.to_string(),
         }
     }
 
