@@ -133,7 +133,7 @@ impl Conversation {
         verify_inputs(&self.model, &self.token).await?;
 
         self.history.push(Message {
-            content: input.clone(),
+            content: input,
             role: "user".to_string(),
         });
 
@@ -161,14 +161,10 @@ impl Conversation {
         });
 
         let client = Client::new();
-        let request = client
-            .request(Method::POST, url)
-            .header("Content-Type", "application/json")
-            .body(serde_json::to_string(&data)?)
-            .build()?;
+        let request = client.request(Method::POST, url).json(&data).build()?;
 
         let http_response = client.execute(request).await?;
-        let response_json: Value = serde_json::from_str(&http_response.text().await?)?;
+        let response_json: Value = http_response.json().await?;
         let candidate = &response_json["candidates"][0];
         let token_count = response_json["usageMetadata"]["candidatesTokenCount"]
             .as_u64()
@@ -215,14 +211,14 @@ impl Conversation {
 /// - `gemini-1.5-pro`
 /// - `gemini-1.0-pro`
 pub async fn get_models(token: &str) -> Result<Vec<String>, GeminiError> {
-    let request = reqwest::get(format!(
+    let response_json = reqwest::get(format!(
         "https://generativelanguage.googleapis.com/v1beta/models?key={0}",
         token
     ))
     .await?
-    .text()
+    .json()
     .await?;
-    let response_json: Value = serde_json::from_str(&request)?;
+
     let models = format_models(response_json);
 
     Ok(models)
@@ -247,21 +243,21 @@ fn format_models(input: Value) -> Vec<String> {
 async fn verify_inputs<'a>(model_name: &'a str, token: &'a str) -> Result<(), GeminiError<'a>> {
     //let models = get_models(token).await.unwrap();
     //models.contains(&model_name.to_string())
-    let request = reqwest::get(format!(
+    let response_json: Value = reqwest::get(format!(
         "https://generativelanguage.googleapis.com/v1beta/models?key={0}",
         token
     ))
     .await?
-    .text()
+    .json()
     .await?;
-    let response_json: Value = serde_json::from_str(&request)?;
+
     if response_json.get("error").is_some() {
-        println!("{0}", response_json["error"]);
         return Err(GeminiError::KeyError(format!(
             "{0}: {1}",
             response_json["error"]["code"], response_json["error"]["message"]
         )));
     };
+
     let models = format_models(response_json);
     if !models.contains(&model_name.to_string()) {
         return Err(GeminiError::ModelError(

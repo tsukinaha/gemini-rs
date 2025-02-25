@@ -66,8 +66,7 @@ pub async fn upload_file<'a>(
         .header("X-Goog-Upload-Command", "start")
         .header("X-Goog-Upload-Header-Content-Length", file_size)
         .header("X-Goog-Upload-Header-Content-Type", mime_type)
-        .header("Content-Type", "application/json")
-        .body(data)
+        .json(&data)
         .send()
         .await
         .unwrap();
