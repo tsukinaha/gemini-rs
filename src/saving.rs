@@ -1,8 +1,8 @@
+use serde_json::{json, Value};
 use std::{
     fs::File,
     io::{Read, Write},
 };
-use serde_json::{json, Value};
 
 use crate::{Conversation, Message, Part};
 
