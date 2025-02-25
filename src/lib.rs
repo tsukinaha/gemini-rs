@@ -235,10 +235,9 @@ fn format_models(input: Value) -> Vec<String> {
         .iter()
         .map(|i| {
             i["name"]
-                .to_string()
-                .strip_prefix("\"models/")
+                .as_str()
                 .unwrap()
-                .strip_suffix("\"")
+                .strip_prefix("models/")
                 .unwrap()
                 .to_string()
         })
