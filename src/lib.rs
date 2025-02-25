@@ -132,10 +132,7 @@ impl Conversation {
         &mut self,
         input: Vec<Part>,
     ) -> Result<GeminiResponse, GeminiError> {
-        let model_verified = verify_inputs(&self.model, &self.token).await;
-        if let Err(ref _e) = model_verified {
-            return Err(model_verified.unwrap_err());
-        };
+        verify_inputs(&self.model, &self.token).await?;
 
         self.history.push(Message {
             content: input.clone(),
