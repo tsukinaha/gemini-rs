@@ -15,7 +15,7 @@ impl Conversation {
             let mut content = vec![];
             for part in &i.content {
                 content.push(match part {
-                    Part::Text(text) => json::object! {"text": *text.clone()},
+                    Part::Text(text) => json::object! {"text": text.clone()},
                     Part::File(file_data) => json::object! {
                         "file_uri": file_data.file_uri.clone(),
                         "mime_type": file_data.mime_type.clone()
