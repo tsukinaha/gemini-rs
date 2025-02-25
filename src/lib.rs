@@ -133,7 +133,7 @@ impl Conversation {
         verify_inputs(&self.model, &self.token).await?;
 
         self.history.push(Message {
-            content: input.clone(),
+            content: input,
             role: "user".to_string(),
         });
 
