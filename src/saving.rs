@@ -1,4 +1,7 @@
-use std::{fs::File, io::{Read, Write}};
+use std::{
+    fs::File,
+    io::{Read, Write},
+};
 
 use crate::{Conversation, Message, Part};
 
@@ -16,13 +19,15 @@ impl Conversation {
                     Part::File(file_data) => json::object! {
                         "file_uri": file_data.file_uri.clone(),
                         "mime_type": file_data.mime_type.clone()
-                    }
+                    },
                 })
-            };
-            json["history"].push(json::object! {
-                "role": i.role.clone(),
-                "content": content
-            }).unwrap();
+            }
+            json["history"]
+                .push(json::object! {
+                    "role": i.role.clone(),
+                    "content": content
+                })
+                .unwrap();
         }
         let _ = file.write_all(json.dump().as_bytes());
     }
@@ -41,11 +46,14 @@ impl Conversation {
                 } else if part.has_key("file_uri") {
                     parts.push(Part::File(crate::files::GeminiFile {
                         file_uri: part["file_uri"].as_str().unwrap().to_string(),
-                        mime_type: part["mime_type"].as_str().unwrap().to_string()
+                        mime_type: part["mime_type"].as_str().unwrap().to_string(),
                     }));
                 }
             }
-            history.push(Message { content: parts, role: i["role"].as_str().unwrap().to_string() });
+            history.push(Message {
+                content: parts,
+                role: i["role"].as_str().unwrap().to_string(),
+            });
         }
         self.history = history;
     }
