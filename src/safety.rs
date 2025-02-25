@@ -1,4 +1,4 @@
-//! Handles everything related to safety 
+//! Handles everything related to safety
 //!
 //! Is used to change what kind of messages will be blocked, as well as to show why
 //! a message was blocked
@@ -30,7 +30,8 @@ pub enum HarmCategory {
     DangerousContent,
     /// **Gemini** - Content that may be used to harm civic integrity
     CivicIntergrity,
-} impl HarmCategory {
+}
+impl HarmCategory {
     pub fn get_real(&self) -> &str {
         match self {
             Self::Unspecified => "HARM_CATEGORY_UNSPECIFIED",
@@ -51,7 +52,7 @@ pub enum HarmCategory {
         match input {
             "HARM_CATEGORY_DEROGATORY" => HarmCategory::Derogatory,
             "HARM_CATEGORY_TOXICITY" => HarmCategory::Toxicity,
-            "HARM_CATEGORY_VIOLENCE" => HarmCategory::Violence, 
+            "HARM_CATEGORY_VIOLENCE" => HarmCategory::Violence,
             "HARM_CATEGORY_SEXUAL" => HarmCategory::Sexual,
             "HARM_CATEGORY_MEDICAL" => HarmCategory::Medical,
             "HARM_CATEGORY_DANGEROUS" => HarmCategory::Dangerous,
@@ -81,7 +82,8 @@ pub enum HarmProbability {
     Medium,
     /// Content has a high chance of being unsafe
     High,
-} impl HarmProbability {
+}
+impl HarmProbability {
     pub fn get_real(&self) -> &str {
         match self {
             Self::Unspecified => "HARM_PROBABILITY_UNSPECIFIED",
@@ -117,7 +119,8 @@ pub enum HarmBlockThreshold {
     None,
     /// Turn off the safety filter.
     Off,
-} impl HarmBlockThreshold {
+}
+impl HarmBlockThreshold {
     pub fn get_real(&self) -> &str {
         match self {
             Self::Unspecified => "HARM_BLOCK_THRESHOLD_UNSPECIFIED",
@@ -131,7 +134,7 @@ pub enum HarmBlockThreshold {
 }
 
 /// Safety setting, affecting the safety-blocking behavior.
-/// 
+///
 /// Passing a safety setting for a category changes the allowed probability that content is blocked.
 #[derive(Debug)]
 pub struct SafetySetting {
@@ -140,7 +143,7 @@ pub struct SafetySetting {
 }
 
 /// Safety rating for a piece of content.
-/// 
+///
 /// The safety rating contains the category of harm and the harm probability level in that category for a piece of content.
 /// Content is classified for safety across a number of harm categories
 /// and the probability of the harm classification is included here.
@@ -154,23 +157,23 @@ pub fn safety_settings_from(threshold: HarmBlockThreshold) -> Vec<SafetySetting>
     vec![
         SafetySetting {
             category: HarmCategory::Harassment,
-            threshold: threshold.clone()
+            threshold: threshold.clone(),
         },
         SafetySetting {
             category: HarmCategory::HateSpeech,
-            threshold: threshold.clone()
+            threshold: threshold.clone(),
         },
         SafetySetting {
             category: HarmCategory::SexuallyExplicit,
-            threshold: threshold.clone()
+            threshold: threshold.clone(),
         },
         SafetySetting {
             category: HarmCategory::DangerousContent,
-            threshold: threshold.clone()
+            threshold: threshold.clone(),
         },
         SafetySetting {
             category: HarmCategory::CivicIntergrity,
-            threshold: threshold.clone()
+            threshold: threshold.clone(),
         },
     ]
 }
