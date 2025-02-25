@@ -1,5 +1,6 @@
 //! Handles everything related to prompting Gemini with external files.
 use reqwest::Method;
+use serde_json::Value;
 
 use crate::GeminiError;
 
@@ -101,10 +102,11 @@ pub async fn upload_file<'a>(
         .await
         .unwrap();
 
-    let files_list = &json::parse(&file_list_request.text().await.unwrap()).unwrap()["files"];
+    let files_list: Value = serde_json::from_str(&file_list_request.text().await.unwrap())?;
+    let files = files_list["files"].as_array().unwrap();
 
     Ok(GeminiFile {
-        file_uri: files_list[0]["uri"].as_str().unwrap().to_string(),
+        file_uri: files[0]["uri"].as_str().unwrap().to_string(),
         mime_type: mime_type.to_string(),
     })
 }

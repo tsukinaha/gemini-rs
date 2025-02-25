@@ -6,9 +6,9 @@ pub mod safety;
 pub mod saving;
 
 use files::GeminiFile;
-use json::JsonValue;
 use reqwest::{Client, Method};
 use response::GeminiResponse;
+use serde_json::{json, Value};
 use std::io;
 use thiserror::Error;
 
@@ -25,7 +25,7 @@ pub enum GeminiError<'a> {
 
     /// Error type for JSON parsing errors (you shouldn't get this one unless something bad happened)
     #[error("JSON parsing failed: {0}")]
-    JsonError(#[from] json::Error),
+    JsonError(#[from] serde_json::Error),
 
     /// Error type for parsing
     #[error("Response parsing failed: {0}")]
@@ -64,27 +64,25 @@ pub struct Message {
     pub role: String,
 }
 impl Message {
-    pub fn get_real(&self) -> JsonValue {
-        let mut obj = json::object! {
-            "parts": [],
-            "role": self.role.clone()
-        };
+    pub fn get_real(&self) -> Value {
+        let mut parts = Vec::new();
         for i in self.content.clone() {
-            obj["parts"]
-                .push(match i {
-                    Part::Text(text) => json::object! {
-                        "text": text
-                    },
-                    Part::File(file) => json::object! {
-                        "file_data": {
-                            "mime_type": file.mime_type,
-                            "file_uri": file.file_uri
-                        }
-                    },
-                })
-                .unwrap()
+            parts.push(match i {
+                Part::Text(text) => json!({
+                    "text": text
+                }),
+                Part::File(file) => json!({
+                    "file_data": {
+                        "mime_type": file.mime_type,
+                        "file_uri": file.file_uri
+                    }
+                }),
+            });
         }
-        obj
+        json!({
+            "parts": parts,
+            "role": self.role
+        })
     }
 }
 
@@ -144,32 +142,35 @@ impl Conversation {
             self.model, self.token
         );
 
-        let mut data = json::object! {
-            "safetySettings": [],
-            "contents": []
-        };
+        let mut contents = Vec::new();
         for i in &self.history {
-            data["contents"].push(i.get_real())?
+            contents.push(i.get_real());
         }
+
+        let mut safety_settings = Vec::new();
         for i in &self.safety_settings {
-            data["safetySettings"].push(json::object! {
+            safety_settings.push(json!({
                 "category": i.category.get_real(),
                 "threshold": i.threshold.get_real()
-            })?
+            }));
         }
+
+        let data = json!({
+            "safetySettings": safety_settings,
+            "contents": contents
+        });
 
         let client = Client::new();
         let request = client
             .request(Method::POST, url)
             .header("Content-Type", "application/json")
-            .body(data.dump())
+            .body(serde_json::to_string(&data)?)
             .build()?;
 
         let http_response = client.execute(request).await?;
-        let response_json = http_response.text().await?;
-        let response_dict = json::parse(&response_json)?;
-        let candidate = response_dict["candidates"][0].clone();
-        let token_count = response_dict["usageMetadata"]["candidatesTokenCount"]
+        let response_json: Value = serde_json::from_str(&http_response.text().await?)?;
+        let candidate = &response_json["candidates"][0];
+        let token_count = response_json["usageMetadata"]["candidatesTokenCount"]
             .as_u64()
             .ok_or_else(|| GeminiError::ParseError("Failed to extract token count"))?;
         let finish_reason =
@@ -177,13 +178,13 @@ impl Conversation {
 
         let parts_dict = candidate["content"]["parts"].clone();
         let mut content = vec![];
-        for i in parts_dict.members() {
+        for i in parts_dict.as_array().unwrap() {
             let part = Part::Text(i["text"].as_str().unwrap().to_string());
             content.push(part)
         }
 
         let mut safety_rating = vec![];
-        for i in candidate["safetyRatings"].members() {
+        for i in candidate["safetyRatings"].as_array().unwrap() {
             safety_rating.push(safety::SafetyRating {
                 category: safety::HarmCategory::get_fake(i["category"].as_str().unwrap()),
                 probability: safety::HarmProbability::get_fake(i["probability"].as_str().unwrap()),
@@ -221,15 +222,15 @@ pub async fn get_models(token: &str) -> Result<Vec<String>, GeminiError> {
     .await?
     .text()
     .await?;
-    let response_json = json::parse(&request)?;
+    let response_json: Value = serde_json::from_str(&request)?;
     let models = format_models(response_json);
 
     Ok(models)
 }
 
-fn format_models(input: JsonValue) -> Vec<String> {
+fn format_models(input: Value) -> Vec<String> {
     let mut models: Vec<String> = vec![];
-    for i in input["models"].members() {
+    for i in input["models"].as_array().unwrap() {
         models.push(
             i["name"]
                 .to_string()
@@ -251,9 +252,9 @@ async fn verify_inputs<'a>(model_name: &'a str, token: &'a str) -> Result<(), Ge
     .await?
     .text()
     .await?;
-    let response_json = json::parse(&request)?;
-    if response_json.has_key("error") {
-        println!("{0}", response_json["error"].dump());
+    let response_json: Value = serde_json::from_str(&request)?;
+    if response_json.get("error").is_some() {
+        println!("{0}", response_json["error"].to_string());
         return Err(GeminiError::KeyError(format!(
             "{0}: {1}",
             response_json["error"]["code"], response_json["error"]["message"]
