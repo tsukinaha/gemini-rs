@@ -11,11 +11,11 @@ impl Conversation {
         let mut json = json::object! {
             "history": []
         };
-        for i in self.history.iter() {
+        for i in &self.history {
             let mut content = vec![];
-            for part in i.content.iter() {
+            for part in &i.content {
                 content.push(match part {
-                    Part::Text(text) => json::object! {"text": *text.clone()},
+                    Part::Text(text) => json::object! {"text": text.clone()},
                     Part::File(file_data) => json::object! {
                         "file_uri": file_data.file_uri.clone(),
                         "mime_type": file_data.mime_type.clone()

@@ -123,7 +123,7 @@ impl Conversation {
             .await
         {
             Ok(i) => i.get_text(),
-            Err(e) => format!("{e}"),
+            Err(e) => e.to_string(),
         }
     }
 
@@ -132,10 +132,7 @@ impl Conversation {
         &mut self,
         input: Vec<Part>,
     ) -> Result<GeminiResponse, GeminiError> {
-        let model_verified = verify_inputs(&self.model, &self.token).await;
-        if let Err(ref _e) = model_verified {
-            return Err(model_verified.unwrap_err());
-        };
+        verify_inputs(&self.model, &self.token).await?;
 
         self.history.push(Message {
             content: input.clone(),
@@ -151,7 +148,7 @@ impl Conversation {
             "safetySettings": [],
             "contents": []
         };
-        for i in self.history.iter() {
+        for i in &self.history {
             data["contents"].push(i.get_real())?
         }
         for i in &self.safety_settings {
