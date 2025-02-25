@@ -148,7 +148,7 @@ impl Conversation {
             "safetySettings": [],
             "contents": []
         };
-        for i in self.history.iter() {
+        for i in &self.history {
             data["contents"].push(i.get_real())?
         }
         for i in &self.safety_settings {
