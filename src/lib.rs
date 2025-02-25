@@ -229,17 +229,20 @@ pub async fn get_models(token: &str) -> Result<Vec<String>, GeminiError> {
 }
 
 fn format_models(input: Value) -> Vec<String> {
-    let mut models: Vec<String> = vec![];
-    for i in input["models"].as_array().unwrap() {
-        models.push(
+    input["models"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| {
             i["name"]
                 .to_string()
-                .strip_prefix("models/")
+                .strip_prefix("\"models/")
                 .unwrap()
-                .to_string(),
-        );
-    }
-    models
+                .strip_suffix("\"")
+                .unwrap()
+                .to_string()
+        })
+        .collect()
 }
 
 async fn verify_inputs<'a>(model_name: &'a str, token: &'a str) -> Result<(), GeminiError<'a>> {
@@ -254,7 +257,7 @@ async fn verify_inputs<'a>(model_name: &'a str, token: &'a str) -> Result<(), Ge
     .await?;
     let response_json: Value = serde_json::from_str(&request)?;
     if response_json.get("error").is_some() {
-        println!("{0}", response_json["error"].to_string());
+        println!("{0}", response_json["error"]);
         return Err(GeminiError::KeyError(format!(
             "{0}: {1}",
             response_json["error"]["code"], response_json["error"]["message"]
