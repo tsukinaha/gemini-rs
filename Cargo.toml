@@ -1,8 +1,9 @@
 [package]
 name = "gemini-rs"
-version = "0.4.3"
-edition = "2021"
+version = "1.0.0"
+edition = "2024"
 license = "MIT"
+authors = ["gvozdvmozgu <gvozdvmozgu@gmail.com>"]
 description = "A library to interact with the Google Gemini API"
 homepage = "https://github.com/Shuflduf/gemini-rs"
 repository = "https://github.com/Shuflduf/gemini-rs"
@@ -10,7 +11,16 @@ readme = "README.md"
 keywords = ["ai", "google", "gemini"]
 
 [dependencies]
-reqwest = { version = "0.12.9", features = ["json"] }
-serde_json = "1.0.139"
-thiserror = "1.0.66"
-tokio = { version = "1.41.0", features = ["full"] }
+futures = "0.3"
+reqwest = { version = "0.12", features = ["json"] }
+secrecy = "0.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+tokio = "1.43"
+
+[dev-dependencies]
+tokio = { version = "1.43", default-features = false, features = [
+    "macros",
+    "rt-multi-thread",
+] }
