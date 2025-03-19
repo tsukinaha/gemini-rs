@@ -1,5 +1,3 @@
-#![recursion_limit = "256"]
-
 use gemini_rs::types::{Schema, Type};
 
 #[tokio::main]
@@ -42,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let response = gemini_rs::chat("gemini-1.5-flash")
+    let response = gemini_rs::chat("gemini-2.0-flash")
         .to_json()
         .response_schema(list_person)
         .json::<serde_json::Value>("List some US presidents")
