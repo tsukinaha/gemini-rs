@@ -1,8 +1,8 @@
 #![warn(unreachable_pub, unused_qualifications)]
 
-mod chat;
 mod client;
 mod error;
+pub mod chat;
 pub mod types;
 
 pub type Result<T> = std::result::Result<T, Error>;
